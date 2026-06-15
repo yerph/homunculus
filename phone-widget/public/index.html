@@ -197,6 +197,97 @@ body.in-iframe .chat-header { padding-top: 38px; }
   font-size: 0.45rem; margin-top: 2px; padding: 1px 8px; border-radius: 8px;
   background: rgba(255,255,255,0.06); color: var(--weak); letter-spacing: 0.03em;
 }
+
+/* ============================================================
+ *  设置面板
+ * ============================================================ */
+#settings-btn {
+  position: absolute; top: 12px; right: 14px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: transparent; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 15px; padding: 0;
+  transition: color 0.2s;
+  z-index: 10;
+}
+#settings-btn:hover { color: var(--ink); }
+
+#settings-panel {
+  position: absolute; inset: 0; z-index: 100;
+  background: var(--bg); display: none; flex-direction: column;
+  overflow-y: auto;
+}
+#settings-panel.open { display: flex; }
+
+.settings-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 60px 20px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.settings-header button {
+  background: transparent; border: none; cursor: pointer;
+  color: var(--accent); font-size: 14px; padding: 0; line-height: 1;
+}
+.settings-header h2 {
+  font-size: 16px; font-weight: 600; color: var(--ink); flex: 1;
+}
+
+.settings-section {
+  padding: 18px 20px 4px;
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 20px; border-bottom: 1px solid var(--line);
+}
+.settings-row label {
+  font-size: 13.5px; color: var(--ink);
+}
+.settings-row .hint {
+  font-size: 11px; color: var(--muted); margin-top: 2px;
+}
+
+/* 模式切换 toggle */
+.mode-toggle {
+  display: flex; border-radius: 10px; overflow: hidden;
+  border: 1px solid var(--line); background: var(--card-solid);
+}
+.mode-toggle button {
+  padding: 5px 14px; font-size: 12px; border: none; cursor: pointer;
+  background: transparent; color: var(--muted); transition: all 0.2s;
+}
+.mode-toggle button.active {
+  background: var(--accent); color: #fff;
+}
+
+/* 输入框 */
+.settings-input {
+  width: 100%; background: var(--card-solid); border: 1px solid var(--line);
+  border-radius: 10px; padding: 8px 12px; color: var(--ink);
+  font-size: 13px; font-family: inherit; outline: none; margin-top: 6px;
+}
+.settings-input:focus { border-color: var(--accent); }
+.settings-input::placeholder { color: var(--weak); }
+
+.settings-field {
+  padding: 10px 20px; border-bottom: 1px solid var(--line);
+}
+.settings-field > label {
+  font-size: 11.5px; color: var(--muted);
+}
+
+.settings-save {
+  margin: 18px 20px; padding: 11px;
+  background: var(--accent); border: none; border-radius: 12px;
+  color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: opacity 0.2s;
+}
+.settings-save:hover { opacity: 0.85; }
+
+.settings-api-fields { display: none; }
+.settings-api-fields.visible { display: block; }
 .chat-messages {
   padding: 16px; flex: 1; min-height: 0; overflow-y: auto;
   display: flex; flex-direction: column; gap: 3px;
@@ -290,7 +381,7 @@ body.in-iframe .chat-header { padding-top: 38px; }
        APP: CHAT (opens directly after unlock)
        ============================================================ -->
   <div id="app-chat" class="screen">
-    <div class="chat-header">
+    <div class="chat-header" style="position:relative;">
       <div class="chat-contact">
         <!-- CUSTOMIZE: change avatar letter and name -->
         <div class="chat-avatar">C</div>
@@ -298,12 +389,62 @@ body.in-iframe .chat-header { padding-top: 38px; }
         <div class="chat-contact-sub">real-time chat</div>
         <div id="chat-status">connecting...</div>
       </div>
+      <button id="settings-btn" onclick="openSettings()" title="Settings">&#9881;</button>
     </div>
     <div class="chat-messages" id="chat-msgs"></div>
     <div class="chat-input-bar">
       <input class="chat-input" id="chat-input" placeholder="Type a message..."
              onkeypress="if(event.key==='Enter')sendChatMsg()">
       <button class="chat-send" onclick="sendChatMsg()">&#8593;</button>
+    </div>
+
+    <!-- 设置面板 (叠在 chat 上层) -->
+    <div id="settings-panel">
+      <div class="settings-header">
+        <button onclick="closeSettings()">&#8592;</button>
+        <h2>Settings</h2>
+      </div>
+
+      <div class="settings-section">Mode</div>
+      <div class="settings-row">
+        <div>
+          <div style="font-size:13.5px;color:var(--ink);">Chat mode</div>
+          <div class="hint">CC: routes via Claude Code&nbsp;&nbsp;API: direct LLM call</div>
+        </div>
+        <div class="mode-toggle">
+          <button id="mode-cc-btn" onclick="setMode('cc')">CC</button>
+          <button id="mode-api-btn" onclick="setMode('api')">API</button>
+        </div>
+      </div>
+
+      <div class="settings-api-fields" id="api-fields">
+        <div class="settings-section">API Provider</div>
+        <div class="settings-field">
+          <label>Endpoint URL</label>
+          <input class="settings-input" id="cfg-endpoint"
+                 placeholder="https://api.anthropic.com/v1/messages">
+        </div>
+        <div class="settings-field">
+          <label>API Key</label>
+          <input class="settings-input" id="cfg-key" type="password"
+                 placeholder="sk-…">
+        </div>
+        <div class="settings-field" style="padding-bottom:14px;">
+          <label>Model</label>
+          <input class="settings-input" id="cfg-model"
+                 placeholder="claude-opus-4-5">
+        </div>
+
+        <div class="settings-section">Persona</div>
+        <div class="settings-field" style="padding-bottom:14px;">
+          <label>System prompt (optional)</label>
+          <textarea class="settings-input" id="cfg-sysprompt" rows="4"
+                    placeholder="You are a helpful assistant."
+                    style="resize:none;line-height:1.5;"></textarea>
+        </div>
+      </div>
+
+      <button class="settings-save" onclick="saveSettings()">Save</button>
     </div>
   </div>
 
@@ -413,7 +554,85 @@ setInterval(tickTime, 1000);
 })();
 
 /* ============================================================
- *  WEBSOCKET — real-time chat connection
+ *  设置面板 — localStorage 存储
+ * ============================================================ */
+
+var appSettings = {
+  mode: 'cc',           // 'cc' | 'api'
+  endpoint: '',
+  key: '',
+  model: '',
+  system_prompt: ''
+};
+
+function loadSettings() {
+  try {
+    var raw = localStorage.getItem('pw_settings');
+    if (raw) appSettings = JSON.parse(raw);
+  } catch (e) {}
+}
+
+function persistSettings() {
+  try { localStorage.setItem('pw_settings', JSON.stringify(appSettings)); } catch (e) {}
+}
+
+function openSettings() {
+  /* 填充表单 */
+  setMode(appSettings.mode, true);
+  $('#cfg-endpoint').value = appSettings.endpoint || '';
+  $('#cfg-key').value = appSettings.key ? '***' + appSettings.key.slice(-4) : '';
+  $('#cfg-model').value = appSettings.model || '';
+  $('#cfg-sysprompt').value = appSettings.system_prompt || '';
+  $('#settings-panel').classList.add('open');
+}
+
+function closeSettings() {
+  $('#settings-panel').classList.remove('open');
+}
+
+function setMode(m, silent) {
+  appSettings.mode = m;
+  $('#mode-cc-btn').classList.toggle('active', m === 'cc');
+  $('#mode-api-btn').classList.toggle('active', m === 'api');
+  var apiFields = $('#api-fields');
+  if (apiFields) apiFields.classList.toggle('visible', m === 'api');
+  if (!silent) persistSettings();
+  updateChatStatus();
+}
+
+function saveSettings() {
+  appSettings.endpoint = $('#cfg-endpoint').value.trim();
+  var rawKey = $('#cfg-key').value.trim();
+  /* 只在用户实际输入了新 key 时才覆盖 */
+  if (rawKey && !rawKey.startsWith('***')) appSettings.key = rawKey;
+  appSettings.model = $('#cfg-model').value.trim();
+  appSettings.system_prompt = $('#cfg-sysprompt').value;
+  persistSettings();
+
+  /* 同步 server 端 config */
+  if (appSettings.mode === 'api') {
+    var payload = {
+      providers: [{
+        name: 'Custom',
+        endpoint: appSettings.endpoint,
+        key: appSettings.key,
+        model: appSettings.model,
+        active: true
+      }],
+      system_prompt: appSettings.system_prompt
+    };
+    fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(function() {});
+  }
+
+  closeSettings();
+}
+
+/* ============================================================
+ *  WEBSOCKET — real-time chat connection (CC mode)
  * ============================================================ */
 
 /* CUSTOMIZE: set this to match AUTH_TOKEN in server.js (empty string = no auth) */
@@ -423,6 +642,7 @@ var ws = null, wsReady = false, ccOnline = false;
 var reconnTimer = null;
 
 function connectWS() {
+  if (appSettings.mode === 'api') return; /* API 模式不需要 WebSocket */
   var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   var url = proto + '//' + location.host + '/';
   ws = new WebSocket(url);
@@ -477,7 +697,7 @@ function connectWS() {
   ws.onclose = function() {
     wsReady = false; ccOnline = false;
     updateChatStatus();
-    if (!reconnTimer) {
+    if (appSettings.mode !== 'api' && !reconnTimer) {
       reconnTimer = setTimeout(function() { reconnTimer = null; connectWS(); }, 3000);
     }
   };
@@ -487,7 +707,113 @@ function connectWS() {
 
 function updateChatStatus() {
   var el = $('#chat-status');
-  if (el) el.textContent = ccOnline ? 'online' : 'offline';
+  if (!el) return;
+  if (appSettings.mode === 'api') {
+    el.textContent = appSettings.endpoint ? 'api mode' : 'api — not configured';
+  } else {
+    el.textContent = ccOnline ? 'online' : 'offline';
+  }
+}
+
+/* ============================================================
+ *  API 模式 — SSE 流式聊天
+ * ============================================================ */
+
+/* 简单对话历史 (API 模式下的上下文窗口) */
+var apiHistory = [];
+
+function sendViaAPI(text) {
+  if (!appSettings.endpoint || !appSettings.key || !appSettings.model) {
+    appendChatBubble('API not configured. Tap ⚙ to add endpoint, key, and model.', false);
+    return;
+  }
+
+  apiHistory.push({ role: 'user', content: text });
+
+  var bubble = null;
+  var accumulated = '';
+
+  function getOrCreateBubble() {
+    if (bubble) return;
+    /* 创建流式接收气泡 */
+    var el = $('#chat-msgs');
+    if (!el) return;
+    var div = document.createElement('div');
+    div.className = 'chat-msg recv';
+    div.innerHTML =
+      '<div class="msg-av" style="background:linear-gradient(135deg,#3a4060,#252a3e)">C</div>' +
+      '<div class="chat-bubble" id="streaming-bubble"></div>';
+    el.appendChild(div);
+    bubble = div.querySelector('#streaming-bubble');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  removeTypingIndicator();
+  showTypingIndicator();
+
+  var payload = {
+    messages: apiHistory.slice(),
+    system_prompt: appSettings.system_prompt || ''
+  };
+
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function(res) {
+    removeTypingIndicator();
+    if (!res.ok) {
+      return res.json().then(function(e) {
+        appendChatBubble('Error: ' + (e.error || res.status), false);
+      });
+    }
+
+    var reader = res.body.getReader();
+    var decoder = new TextDecoder();
+    var sseBuffer = '';
+
+    function readChunk() {
+      return reader.read().then(function(result) {
+        if (result.done) {
+          /* 流结束 — 提交 assistant 消息到历史 */
+          if (accumulated) {
+            apiHistory.push({ role: 'assistant', content: accumulated });
+            if (bubble) bubble.removeAttribute('id'); /* 清除 id */
+          }
+          return;
+        }
+        sseBuffer += decoder.decode(result.value, { stream: true });
+        var lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop();
+        lines.forEach(function(line) {
+          if (!line.startsWith('data: ')) return;
+          var raw = line.slice(6).trim();
+          if (raw === '[DONE]') return;
+          var evt;
+          try { evt = JSON.parse(raw); } catch (e) { return; }
+          if (evt.type === 'content' && evt.content) {
+            getOrCreateBubble();
+            accumulated += evt.content;
+            if (bubble) {
+              bubble.textContent = accumulated;
+              var el = $('#chat-msgs');
+              if (el) el.scrollTop = el.scrollHeight;
+            }
+          }
+          if (evt.type === 'error') {
+            removeTypingIndicator();
+            appendChatBubble('Error: ' + (evt.message || 'unknown'), false);
+          }
+        });
+        return readChunk();
+      });
+    }
+
+    return readChunk();
+  }).catch(function(e) {
+    removeTypingIndicator();
+    appendChatBubble('Network error: ' + e.message, false);
+  });
 }
 
 /* ============================================================
@@ -566,7 +892,13 @@ function sendChatMsg() {
   /* Show locally immediately */
   appendChatBubble(text, true);
 
-  /* Send via WebSocket (real-time) */
+  if (appSettings.mode === 'api') {
+    /* API 模式 — SSE 流式 */
+    sendViaAPI(text);
+    return;
+  }
+
+  /* CC 模式 — WebSocket or HTTP fallback */
   if (ws && ws.readyState === WebSocket.OPEN && wsReady) {
     ws.send(JSON.stringify({ type: 'message', content: text }));
   } else {
@@ -580,9 +912,11 @@ function sendChatMsg() {
 }
 
 /* ============================================================
- *  INIT — connect WebSocket + load initial data
+ *  INIT — load settings, connect WebSocket, load initial data
  * ============================================================ */
+loadSettings();
 connectWS();
+updateChatStatus();
 
 /* Service Worker registration for PWA support */
 if ('serviceWorker' in navigator) {

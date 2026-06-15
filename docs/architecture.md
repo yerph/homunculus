@@ -68,7 +68,9 @@
 一个轻量级的 Node.js 服务器，提供手机端的 iMessage 风格聊天界面。
 
 - **作用**：在手机上提供轻量聊天入口，模拟手机造型的 UI
-- **技术细节**：
+- **功能**：
+  - CC 模式 + API 模式一键切换（与 chat-server 相同的双模式架构）
+  - API 模式支持 Anthropic / OpenAI / OpenRouter 等服务商，流式输出
   - 原生 Node.js HTTP + WebSocket 服务器（没有用 Express 框架）
   - 前端服务端口和内部 MCP 桥接端口分开（端口号可在 `.env` 中配置）
   - `bridge.js` 是一个 MCP stdio 服务器，CC 通过它来通信

@@ -6,12 +6,17 @@
  *   BRIDGE_PORT  (4601) — internal WebSocket for MCP bridge (Claude Code sends replies here)
  *
  * No Express dependency — raw Node.js http + ws.
+ *
+ * 双模式支持:
+ *   CC 模式   — 通过 WebSocket + tmux 转发给 Claude Code
+ *   API 模式  — 直接调用 Anthropic / OpenAI 兼容接口 (SSE 流式)
  */
 
 const http = require('http');
 const { WebSocketServer, WebSocket } = require('ws');
 const fs = require('fs');
 const path = require('path');
+const fetch = require('node-fetch');
 
 /* ============================================================
  *  CUSTOMIZE: environment / config
@@ -47,10 +52,38 @@ const TMUX_SESSION = process.env.TMUX_SESSION || 'cc';
 const USER_NAME    = process.env.USER_NAME || 'user';
 
 const HISTORY_FILE = path.join(__dirname, 'data', 'history.jsonl');
+const CONFIG_FILE  = path.join(__dirname, 'data', 'config.json');
 const PUBLIC_DIR   = path.join(__dirname, 'public');
+
+// 默认配置 — 首次启动时写入
+const DEFAULT_CONFIG = {
+  providers: [
+    {
+      name: 'Anthropic',
+      endpoint: 'https://api.anthropic.com/v1/messages',
+      key: '',
+      model: 'claude-opus-4-5',
+      active: true
+    },
+    {
+      name: 'OpenAI-compatible',
+      endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+      key: '',
+      model: '',
+      active: false
+    }
+  ],
+  system_prompt: ''
+};
 
 // Ensure data directory exists
 try { fs.mkdirSync(path.join(__dirname, 'data'), { recursive: true }); } catch (e) {}
+
+// 写入默认 config (仅首次)
+if (!fs.existsSync(CONFIG_FILE)) {
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(DEFAULT_CONFIG, null, 2));
+  console.log('[hub] 已创建默认 config.json');
+}
 
 /* ============================================================
  *  State
@@ -66,6 +99,184 @@ let ccBusy          = false;
 let busyTimer       = null;
 
 function log(msg) { console.log('[hub] ' + msg); }
+
+/* ============================================================
+ *  配置读写
+ * ============================================================ */
+
+function loadConfig() {
+  try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); }
+  catch (e) { return JSON.parse(JSON.stringify(DEFAULT_CONFIG)); }
+}
+
+function saveConfig(obj) {
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(obj, null, 2));
+}
+
+/* ============================================================
+ *  API 模式 — 工具函数
+ * ============================================================ */
+
+function normalizeEndpoint(url) {
+  url = url.replace(/\/+$/, '');
+  if (!url.endsWith('/chat/completions') && !url.endsWith('/messages')) {
+    url += '/chat/completions';
+  }
+  return url;
+}
+
+function toAnthropicEndpoint(endpoint) {
+  let url = endpoint.replace(/\/+$/, '');
+  url = url.replace(/\/chat\/completions$/, '');
+  if (!url.endsWith('/v1/messages')) {
+    url = url.replace(/\/v1$/, '') + '/v1/messages';
+  }
+  return url;
+}
+
+// SSE 行读取器 (node-fetch body 是 Node.js stream)
+async function* readSSELines(body) {
+  let buffer = '';
+  for await (const chunk of body) {
+    buffer += chunk.toString();
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+      yield line;
+    }
+  }
+  if (buffer.trim()) yield buffer;
+}
+
+// OpenAI 兼容格式流式请求
+async function streamOpenAI(provider, messages, sendEvent) {
+  const chatUrl = normalizeEndpoint(provider.endpoint);
+  const reqBody = {
+    model: provider.model,
+    messages: messages,
+    stream: true
+  };
+
+  const r = await fetch(chatUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + provider.key
+    },
+    body: JSON.stringify(reqBody)
+  });
+
+  if (!r.ok) {
+    const errText = await r.text();
+    let errMsg;
+    try { errMsg = JSON.parse(errText).error?.message || errText; } catch (e) { errMsg = errText; }
+    throw new Error('API ' + r.status + ': ' + errMsg);
+  }
+
+  let fullContent = '';
+
+  for await (const line of readSSELines(r.body)) {
+    if (!line.startsWith('data: ')) continue;
+    const data = line.slice(6).trim();
+    if (data === '[DONE]') break;
+
+    let parsed;
+    try { parsed = JSON.parse(data); } catch (e) { continue; }
+
+    const delta = parsed.choices?.[0]?.delta;
+    if (!delta) continue;
+
+    if (delta.content) {
+      fullContent += delta.content;
+      sendEvent('content', { content: delta.content });
+    }
+  }
+
+  return { content: fullContent };
+}
+
+// Anthropic 原生格式流式请求
+async function streamAnthropic(provider, systemPrompt, messages, sendEvent) {
+  const reqBody = {
+    model: provider.model,
+    max_tokens: 4096,
+    messages: messages,
+    stream: true
+  };
+  if (systemPrompt) reqBody.system = systemPrompt;
+
+  const endpoint = toAnthropicEndpoint(provider.endpoint);
+  const isNative = provider.endpoint.includes('anthropic.com');
+
+  const r = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(isNative
+        ? { 'x-api-key': provider.key }
+        : { 'Authorization': 'Bearer ' + provider.key }),
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify(reqBody)
+  });
+
+  if (!r.ok) {
+    const errText = await r.text();
+    let errMsg;
+    try { errMsg = JSON.parse(errText).error?.message || errText; } catch (e) { errMsg = errText; }
+    throw new Error('API ' + r.status + ': ' + errMsg);
+  }
+
+  const contentBlocks = [];
+  let currentBlockIdx = -1;
+  let fullContent = '';
+
+  for await (const line of readSSELines(r.body)) {
+    if (!line.startsWith('data: ')) continue;
+    const data = line.slice(6).trim();
+
+    let parsed;
+    try { parsed = JSON.parse(data); } catch (e) { continue; }
+
+    switch (parsed.type) {
+      case 'content_block_start': {
+        currentBlockIdx = parsed.index;
+        const block = parsed.content_block;
+        if (block.type === 'text') {
+          contentBlocks[currentBlockIdx] = { type: 'text', text: '' };
+        } else if (block.type === 'thinking') {
+          contentBlocks[currentBlockIdx] = { type: 'thinking', thinking: '' };
+          sendEvent('thinking_start', {});
+        }
+        break;
+      }
+      case 'content_block_delta': {
+        const idx = parsed.index;
+        const delta = parsed.delta;
+        if (delta.type === 'text_delta' && contentBlocks[idx]?.type === 'text') {
+          contentBlocks[idx].text += delta.text;
+          fullContent += delta.text;
+          sendEvent('content', { content: delta.text });
+        } else if (delta.type === 'thinking_delta' && contentBlocks[idx]?.type === 'thinking') {
+          contentBlocks[idx].thinking += delta.thinking;
+          sendEvent('thinking', { content: delta.thinking });
+        }
+        break;
+      }
+      case 'content_block_stop': {
+        const idx = parsed.index;
+        if (contentBlocks[idx]?.type === 'thinking') {
+          sendEvent('thinking_stop', {});
+        }
+        break;
+      }
+      case 'error':
+        throw new Error(parsed.error?.message || 'Anthropic stream error');
+    }
+  }
+
+  return { content: fullContent };
+}
 
 /* ============================================================
  *  JSONL persistence helpers
@@ -184,10 +395,108 @@ function readBody(req, cb) {
  * ============================================================ */
 
 var clientServer = http.createServer(function (req, res) {
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    });
+    res.end();
+    return;
+  }
+
+  // CORS headers for all responses
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
   // --- Health check ---
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok', clients: clients.size, cc_alive: ccAlive }));
+    return;
+  }
+
+  // --- GET /api/config (配置读取, key 脱敏) ---
+  if (req.url === '/api/config' && req.method === 'GET') {
+    const cfg = loadConfig();
+    const safe = JSON.parse(JSON.stringify(cfg));
+    safe.providers = safe.providers.map(function(p) {
+      return Object.assign({}, p, { key: p.key ? '***' + p.key.slice(-4) : '' });
+    });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(safe));
+    return;
+  }
+
+  // --- POST /api/config (配置保存) ---
+  if (req.url === '/api/config' && req.method === 'POST') {
+    readBody(req, function(err, data) {
+      if (err || !data) { res.writeHead(400); res.end('bad json'); return; }
+      const current = loadConfig();
+      // 保留未修改的 key (前端传回 ***xxxx)
+      if (Array.isArray(data.providers)) {
+        data.providers = data.providers.map(function(p, i) {
+          if (p.key && p.key.startsWith('***') && current.providers[i]) {
+            p.key = current.providers[i].key;
+          }
+          return p;
+        });
+      }
+      saveConfig(Object.assign({}, current, data));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    });
+    return;
+  }
+
+  // --- POST /api/chat (API 模式 SSE 流式聊天) ---
+  if (req.url === '/api/chat' && req.method === 'POST') {
+    readBody(req, async function(err, data) {
+      if (err || !data) { res.writeHead(400); res.end('bad json'); return; }
+
+      const config = loadConfig();
+      const provider = config.providers.find(function(p) { return p.active; });
+      if (!provider || !provider.key) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'No active provider configured' }));
+        return;
+      }
+
+      const messages = data.messages || [];
+      const systemPrompt = data.system_prompt !== undefined ? data.system_prompt : (config.system_prompt || '');
+
+      // 判断 provider 类型 — 包含 anthropic 用原生格式, 否则 OpenAI 格式
+      const isAnthropic = provider.endpoint.includes('anthropic');
+
+      // SSE 响应头
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      });
+
+      function sendEvent(type, obj) {
+        try { res.write('data: ' + JSON.stringify(Object.assign({ type: type }, obj)) + '\n\n'); } catch (e) {}
+      }
+
+      try {
+        if (isAnthropic) {
+          await streamAnthropic(provider, systemPrompt, messages, sendEvent);
+        } else {
+          const allMsgs = [];
+          if (systemPrompt) allMsgs.push({ role: 'system', content: systemPrompt });
+          allMsgs.push.apply(allMsgs, messages);
+          await streamOpenAI(provider, allMsgs, sendEvent);
+        }
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } catch (e) {
+        log('api/chat error: ' + e.message);
+        sendEvent('error', { message: e.message });
+        res.write('data: [DONE]\n\n');
+        res.end();
+      }
+    });
     return;
   }
 
