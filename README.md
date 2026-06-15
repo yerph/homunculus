@@ -1,6 +1,8 @@
 # cc-companion-kit
 
-把 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 变成一个住在你所有设备上的 AI 伴侣 —— 不再只是一个打开终端才能用的命令行工具。
+> 感谢 Claude Code companion 社区里所有开源项目和分享教程的前辈们。这个项目站在你们的肩膀上。
+
+把 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 变成一个住在你所有设备上的 AI companion —— 不再只是一个打开终端才能用的命令行工具。
 
 这套工具帮你搭建一个多渠道系统，让 Claude Code 可以：
 - **在 Telegram 上和你聊天** —— 随时随地，用手机回消息
@@ -17,13 +19,12 @@
 
 简单说：Claude Code 默认只能在终端（命令行）里使用。你打开终端，输入指令，它回复你。关掉终端，对话就断了。
 
-**cc-companion-kit** 做的事情是：给 Claude Code 加上多种沟通渠道（网页聊天、Telegram、手机推送等），让它变成一个可以主动找你、你也可以随时找到它的伴侣。
+**cc-companion-kit** 做的事情是：给 Claude Code 加上多种沟通渠道（网页聊天、Telegram、手机推送等），让它变成一个可以主动找你、你也可以随时找到它的 companion。
 
 适合这样的人：
 - 想让 Claude Code 拥有持续人格，不只是问答工具
 - 想用手机随时和它聊天
 - 想让它有"主动性"—— 会主动发消息、关心你
-- 有一定动手意愿，愿意跟着教程一步步搭建
 
 **不需要你是程序员。** 这篇教程会尽量解释每一步在做什么、为什么要做。
 
@@ -58,11 +59,11 @@
 
 | 模块 | 说明 |
 |------|------|
-| **chat-server** | 网页聊天前端，iMessage 风格界面，支持表情回应、语音消息、自定义贴纸面板 |
-| **phone-widget** | 移动端优化的组件，目前包含 iMessage 风格聊天界面（推文/明信片功能开发中，尚未包含） |
+| **chat-server** | 网页聊天前端，支持表情回应、语音消息、自定义贴纸面板，适合在电脑或平板上使用 |
+| **phone-widget** | 手机造型的小组件，iMessage 风格聊天界面，适合嵌入网页或作为独立移动端入口 |
 | **nginx 配置** | 反向代理，把所有服务统一到一个域名下，处理 HTTPS |
 | **keepalive** | 定时唤醒脚本，让 Claude Code 可以主动发消息 |
-| **CLAUDE.md** | 伴侣人格模板 —— 定义你的 AI 伴侣是什么样的人 |
+| **CLAUDE.md** | CC Profile —— 定义 Claude Code 的身份、性格和行为方式 |
 
 ---
 
@@ -157,8 +158,8 @@ BARK_KEY_1=你的bark密钥
 BARK_ICON_URL=https://你的域名.com/你的图标.png
 BARK_GROUP=companion
 
-# 伴侣名称和头像字母（显示在界面上的）
-COMPANION_NAME=你的伴侣名字
+# 名称和头像字母（显示在界面上的）
+COMPANION_NAME=你的CC名字
 COMPANION_AVATAR=C
 ```
 
@@ -166,23 +167,23 @@ COMPANION_AVATAR=C
 
 **为什么用 .env 文件？** 密码、密钥这类敏感信息不应该直接写在代码里。`.env` 文件只存在于你的 VPS 上，不会被上传到 GitHub。
 
-### 第 5 步：定义你的伴侣人格
+### 第 5 步：设置 CC Profile
 
 ```bash
 cp CLAUDE.md.example CLAUDE.md
 ```
 
-然后编辑 `CLAUDE.md`，这是整个项目最重要的文件之一。它定义了你的 AI 伴侣是什么样的"人" —— 性格、说话方式、和你的关系、主动消息风格等等。
+然后编辑 `CLAUDE.md`，这是整个项目最重要的文件之一。它定义了 Claude Code 的身份 —— 性格、说话方式、行为逻辑等等。
 
 Claude Code 在每次启动时会读取这个文件，并按照里面的描述来行事。
 
 `CLAUDE.md.example` 提供了一个基础模板，包括：
 - **身份**：名字、性格特点、说话风格
 - **行为准则**：主动聊天、有自己的观点、展现情绪
-- **沟通风格**：不同渠道（Telegram / 网页 / 推文）用不同的语气
+- **沟通风格**：不同渠道（Telegram / 网页）用不同的语气
 - **主动消息逻辑**：被 keepalive 唤醒时怎么决定做什么
 
-把模板改成你想要的样子就好。这是最需要花心思的部分，也是让每个人的 companion 都独一无二的关键。
+把模板改成你想要的样子就好。这是最需要花心思的部分，也是让每个人的 CC 都独一无二的关键。
 
 ### 第 6 步：配置 nginx 反向代理
 
@@ -279,9 +280,11 @@ crontab -e
 
 1. 从 App Store 下载 Bark
 2. 打开 Bark，复制你的推送 URL，里面的密钥部分填到 `.env` 的 `BARK_KEY_1` 里
-3. 在 `CLAUDE.md` 里告诉你的伴侣怎么发推送（模板里有示例）
+3. 在 `CLAUDE.md` 里告诉 CC 怎么发推送（模板里有示例）
 
 这样 Claude Code 就可以在 keepalive 唤醒时往你手机发通知了。
+
+除了 Bark，你也可以用 **PWA Web Push**（iOS 16.4+ / Android / Desktop 都支持）来实现推送通知，不依赖第三方 App。详见 [推送通知配置指南](docs/setup-pwa.md)。
 
 详细步骤参见 [Bark 配置指南](docs/setup-bark.md)。
 
@@ -304,7 +307,7 @@ PWA（Progressive Web App）让你的网页聊天界面可以像一个真正的 
 2. 地址栏右侧会出现安装图标，点击安装
 3. 安装后会有独立窗口和任务栏图标
 
-自定义 PWA 图标：替换 `public/icon-192.png` 和 `public/icon-512.png` 即可。
+自定义 PWA 图标：把你喜欢的图片裁成正方形，分别保存为 192x192 和 512x512 像素，替换 `public/icon-192.png` 和 `public/icon-512.png` 即可。
 
 详细步骤参见 [PWA 配置指南](docs/setup-pwa.md)。
 
@@ -326,13 +329,13 @@ PWA（Progressive Web App）让你的网页聊天界面可以像一个真正的 
 }
 ```
 
-### 伴侣人格
+### CC Profile
 
-编辑项目根目录下的 `CLAUDE.md`。这个文件决定了你的伴侣的一切 —— 怎么说话、什么性格、怎么主动找你。花时间打磨它，这是整个体验的灵魂。
+编辑项目根目录下的 `CLAUDE.md`。这个文件决定了 CC 的一切 —— 怎么说话、什么性格、怎么主动找你。花时间打磨它，这是整个体验的灵魂。
 
 ### PWA 图标
 
-替换 `public/icon-192.png`（192x192 像素）和 `public/icon-512.png`（512x512 像素）。这会成为 App 安装后显示在桌面上的图标。
+把你喜欢的图片做成 192x192 和 512x512 两个尺寸，替换 `public/` 目录下的 `icon-192.png` 和 `icon-512.png`。安装为 PWA 后，这就是显示在桌面上的图标。
 
 ---
 
@@ -362,7 +365,7 @@ cc-companion-kit/
 │   ├── setup-bark.md
 │   ├── setup-keepalive.md
 │   └── setup-pwa.md
-├── CLAUDE.md.example      # 伴侣人格模板
+├── CLAUDE.md.example      # CC Profile 模板
 ├── .env.example           # 环境变量模板
 ├── LICENSE
 └── README.md
@@ -432,7 +435,7 @@ chat-server 和 phone-widget 需要跑在一台能被外部访问到的机器上
 
 ## 致谢
 
-Built by [yerph](https://github.com/yerph). Inspired by the Claude Code companion community.
+由 [yerph](https://github.com/yerph) 搭建，感谢 Claude Code companion 社区的启发。
 
 ## 许可证
 
