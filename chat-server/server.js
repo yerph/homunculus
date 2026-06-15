@@ -15,7 +15,7 @@
  *
  * Environment variables:
  *   CHAT_PASSWORD  - password for the web UI (required)
- *   CHAT_PORT      - server port (default 3500)
+ *   CHAT_PORT      - server port (default 4500)
  */
 
 const express = require('express');
@@ -41,7 +41,7 @@ if (fs.existsSync(envPath)) {
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-const PORT = parseInt(process.env.CHAT_PORT) || 3500;
+const PORT = parseInt(process.env.CHAT_PORT) || 4500;
 const PASSWORD = process.env.CHAT_PASSWORD || '';
 const DATA_DIR = path.join(__dirname, 'data');
 const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');

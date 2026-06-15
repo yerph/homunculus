@@ -14,7 +14,7 @@ const { CallToolRequestSchema, ListToolsRequestSchema } = require('@modelcontext
 const WebSocket = require('ws');
 
 /* CUSTOMIZE: must match BRIDGE_PORT in server.js */
-const HUB_URL = 'ws://127.0.0.1:' + (process.env.BRIDGE_PORT || 3463);
+const HUB_URL = 'ws://127.0.0.1:' + (process.env.BRIDGE_PORT || 4601);
 
 let hub = null;
 let hubReady = false;

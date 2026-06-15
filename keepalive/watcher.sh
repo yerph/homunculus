@@ -1,14 +1,15 @@
 #!/bin/bash
-# Watcher script — checks for a scheduled wakeup time and sends nudge
+# 自调度 Watcher —— CC 自己决定下次什么时候醒来
 #
-# Claude Code writes a unix timestamp to WAKEUP_FILE when it wants to be woken.
-# This script polls that file and sends the nudge when the time comes.
+# 工作原理：
+#   CC 把下次唤醒的 unix 时间戳写到 WAKEUP_FILE
+#   这个脚本每 60 秒检查一次，时间到了就执行 nudge.sh
 #
-# Usage: nohup ./watcher.sh &
+# 用法：nohup ./watcher.sh &
 
 WAKEUP_FILE="${WAKEUP_FILE:-/tmp/cc-next-wakeup}"
 NUDGE_SCRIPT="$(dirname "$0")/nudge.sh"
-POLL_INTERVAL=60  # Check every 60 seconds
+POLL_INTERVAL=60  # 每 60 秒检查一次
 
 echo "[watcher] Started. Polling $WAKEUP_FILE every ${POLL_INTERVAL}s"
 
