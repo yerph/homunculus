@@ -1,9 +1,9 @@
 /**
- * Phone Widget Hub Server
+ * Phone Widget Chat Server
  *
  * Two-port architecture:
- *   CLIENT_PORT  (3462) — serves static files + HTTP API + WebSocket for browser clients
- *   BRIDGE_PORT  (3463) — internal WebSocket for MCP bridge (Claude Code sends replies here)
+ *   CLIENT_PORT  (4600) — serves static files + HTTP API + WebSocket for browser clients
+ *   BRIDGE_PORT  (4601) — internal WebSocket for MCP bridge (Claude Code sends replies here)
  *
  * No Express dependency — raw Node.js http + ws.
  */
@@ -34,8 +34,8 @@ const path = require('path');
   } catch (e) { /* silent */ }
 })();
 
-const CLIENT_PORT  = parseInt(process.env.CLIENT_PORT)  || 3462;
-const BRIDGE_PORT  = parseInt(process.env.BRIDGE_PORT)   || 3463;
+const CLIENT_PORT  = parseInt(process.env.CLIENT_PORT)  || 4600;
+const BRIDGE_PORT  = parseInt(process.env.BRIDGE_PORT)   || 4601;
 
 /* CUSTOMIZE: set an auth token to protect your WebSocket. Leave empty to disable auth. */
 const AUTH_TOKEN   = process.env.AUTH_TOKEN || '';
@@ -47,8 +47,6 @@ const TMUX_SESSION = process.env.TMUX_SESSION || 'cc';
 const USER_NAME    = process.env.USER_NAME || 'user';
 
 const HISTORY_FILE = path.join(__dirname, 'data', 'history.jsonl');
-const TWEETS_FILE  = path.join(__dirname, 'data', 'tweets.jsonl');
-const MAILS_FILE   = path.join(__dirname, 'data', 'mails.jsonl');
 const PUBLIC_DIR   = path.join(__dirname, 'public');
 
 // Ensure data directory exists
@@ -60,8 +58,6 @@ try { fs.mkdirSync(path.join(__dirname, 'data'), { recursive: true }); } catch (
 
 let clientIdCounter = 0;
 let msgIdCounter    = 0;
-let tweetIdCounter  = 0;
-let mailIdCounter   = 0;
 const clients       = new Map();
 let bridge          = null;
 let bridgeReady     = false;
@@ -88,41 +84,10 @@ function appendJsonl(filepath, obj) {
   fs.appendFileSync(filepath, JSON.stringify(obj) + '\n');
 }
 
-function saveJsonl(filepath, arr) {
-  fs.writeFileSync(filepath, arr.map(function (o) { return JSON.stringify(o); }).join('\n') + '\n');
-}
-
-/* --- History --- */
+/* --- Chat History --- */
 
 function loadHistory() { return loadJsonl(HISTORY_FILE); }
 function appendHistory(msg) { appendJsonl(HISTORY_FILE, msg); }
-
-/* --- Tweets --- */
-
-function loadTweets() {
-  var tweets = loadJsonl(TWEETS_FILE);
-  tweets.forEach(function (t) {
-    var num = parseInt((t.id || '').replace('tw_', ''));
-    if (num > tweetIdCounter) tweetIdCounter = num;
-  });
-  return tweets;
-}
-
-function saveTweets(tweets) { saveJsonl(TWEETS_FILE, tweets); }
-function appendTweet(tweet)  { appendJsonl(TWEETS_FILE, tweet); }
-
-/* --- Mails --- */
-
-function loadMails() {
-  var mails = loadJsonl(MAILS_FILE);
-  mails.forEach(function (m) {
-    var num = parseInt((m.id || '').replace('mail_', ''));
-    if (num > mailIdCounter) mailIdCounter = num;
-  });
-  return mails;
-}
-
-function appendMail(mail) { appendJsonl(MAILS_FILE, mail); }
 
 /* ============================================================
  *  ID generation + broadcast
@@ -215,7 +180,7 @@ function readBody(req, cb) {
 }
 
 /* ============================================================
- *  CLIENT HTTP SERVER (serves pages + API)
+ *  CLIENT HTTP SERVER (serves pages + chat API)
  * ============================================================ */
 
 var clientServer = http.createServer(function (req, res) {
@@ -236,7 +201,7 @@ var clientServer = http.createServer(function (req, res) {
     return;
   }
 
-  // --- POST /api/message  (long-poll chat send) ---
+  // --- POST /api/message  (HTTP chat send fallback) ---
   if (req.url === '/api/message' && req.method === 'POST') {
     readBody(req, function (err, data) {
       if (err || !data) { res.writeHead(400); res.end('bad json'); return; }
@@ -255,140 +220,11 @@ var clientServer = http.createServer(function (req, res) {
     return;
   }
 
-  // --- GET /api/recent ---
+  // --- GET /api/recent  (chat history) ---
   if (req.url === '/api/recent') {
     var history = loadHistory().slice(-30);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(history));
-    return;
-  }
-
-  // --- Tweet API ---
-
-  // GET /api/tweets
-  if (req.url === '/api/tweets' && req.method === 'GET') {
-    var tweets = loadTweets();
-    tweets.reverse();
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(tweets));
-    return;
-  }
-
-  // POST /api/tweets  (create new tweet)
-  if (req.url === '/api/tweets' && req.method === 'POST') {
-    readBody(req, function (err, data) {
-      if (err || !data) { res.writeHead(400); res.end('bad json'); return; }
-      /* CUSTOMIZE: valid author names for tweets */
-      var author = data.author || 'companion';
-      var text = (data.text || '').trim();
-      if (!text) { res.writeHead(400); res.end('empty text'); return; }
-      var tweet = {
-        id: 'tw_' + (++tweetIdCounter),
-        author: author,
-        text: text,
-        ts: new Date().toISOString(),
-        likes: [],
-        comments: [],
-      };
-      appendTweet(tweet);
-      broadcast({ type: 'tweet_new', tweet: tweet });
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(tweet));
-    });
-    return;
-  }
-
-  // POST /api/tweets/:id/like
-  var likeMatch = req.url.match(/^\/api\/tweets\/(tw_\d+)\/like$/);
-  if (likeMatch && req.method === 'POST') {
-    readBody(req, function (err, data) {
-      if (err || !data) { res.writeHead(400); res.end('bad json'); return; }
-      var user = data.user || 'user';
-      var tweets = loadTweets();
-      var tw = tweets.find(function (t) { return t.id === likeMatch[1]; });
-      if (!tw) { res.writeHead(404); res.end('not found'); return; }
-      if (!tw.likes) tw.likes = [];
-      var idx = tw.likes.indexOf(user);
-      if (idx >= 0) { tw.likes.splice(idx, 1); } else { tw.likes.push(user); }
-      saveTweets(tweets);
-      broadcast({ type: 'tweet_like', id: tw.id, likes: tw.likes });
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ liked: idx < 0, likes: tw.likes }));
-    });
-    return;
-  }
-
-  // POST /api/tweets/:id/comment
-  var cmtMatch = req.url.match(/^\/api\/tweets\/(tw_\d+)\/comment$/);
-  if (cmtMatch && req.method === 'POST') {
-    readBody(req, function (err, data) {
-      if (err || !data) { res.writeHead(400); res.end('bad json'); return; }
-      var author = data.author || 'user';
-      var text = (data.text || '').trim();
-      if (!text) { res.writeHead(400); res.end('empty text'); return; }
-      var tweets = loadTweets();
-      var tw = tweets.find(function (t) { return t.id === cmtMatch[1]; });
-      if (!tw) { res.writeHead(404); res.end('not found'); return; }
-      if (!tw.comments) tw.comments = [];
-      var cmt = { id: 'cm_' + Date.now(), author: author, text: text, ts: new Date().toISOString() };
-      if (data.reply_to) { cmt.reply_to = data.reply_to; cmt.reply_to_author = data.reply_to_author || ''; }
-      tw.comments.push(cmt);
-      saveTweets(tweets);
-      broadcast({ type: 'tweet_comment', tweet_id: tw.id, comment: cmt, total: tw.comments.length });
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(cmt));
-    });
-    return;
-  }
-
-  // DELETE /api/tweets/:id
-  var delMatch = req.url.match(/^\/api\/tweets\/(tw_\d+)$/);
-  if (delMatch && req.method === 'DELETE') {
-    var tweets = loadTweets();
-    var idx = tweets.findIndex(function (t) { return t.id === delMatch[1]; });
-    if (idx < 0) { res.writeHead(404); res.end('not found'); return; }
-    tweets.splice(idx, 1);
-    saveTweets(tweets);
-    broadcast({ type: 'tweet_delete', id: delMatch[1] });
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ deleted: true }));
-    return;
-  }
-
-  // --- Mail API ---
-
-  // GET /api/mails
-  if (req.url === '/api/mails' && req.method === 'GET') {
-    var mails = loadMails();
-    mails.reverse();
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(mails));
-    return;
-  }
-
-  // POST /api/mails  (send a new postcard)
-  if (req.url === '/api/mails' && req.method === 'POST') {
-    readBody(req, function (err, data) {
-      if (err || !data) { res.writeHead(400); res.end('bad json'); return; }
-      var from = (data.from || '').trim();
-      var subj = (data.subj || '').trim();
-      var mailBody = (data.body || '').trim();
-      if (!from || !subj || !mailBody) { res.writeHead(400); res.end('missing fields'); return; }
-      var mail = {
-        id: 'mail_' + (++mailIdCounter),
-        from: from,
-        av: data.av || from.charAt(0),
-        col: data.col || 'var(--accent)',
-        subj: subj,
-        body: mailBody,
-        ts: new Date().toISOString(),
-        unread: true,
-      };
-      appendMail(mail);
-      broadcast({ type: 'mail_new', mail: mail });
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(mail));
-    });
     return;
   }
 
