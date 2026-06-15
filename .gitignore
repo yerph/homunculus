@@ -3,3 +3,7 @@ node_modules/
 CLAUDE.md
 *.log
 .DS_Store
+
+# 运行时数据（聊天记录、配置等，不应提交）
+chat-server/data/
+phone-widget/data/
