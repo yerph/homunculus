@@ -836,7 +836,7 @@ function loadChatHistory() {
       var isSent = m.role === 'user';
       appendChatBubbleRaw(el, m.content || '', isSent, false);
     });
-    el.scrollTop = el.scrollHeight;
+    setTimeout(function(){ el.scrollTop = el.scrollHeight; }, 50);
   }).catch(function() {});
 }
 
