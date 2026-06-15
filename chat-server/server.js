@@ -499,6 +499,50 @@ app.post('/api/chat', auth, async (req, res) => {
 });
 
 // ============================================================
+// Context compression — uses a secondary cheap model to summarize old messages
+// ============================================================
+app.post('/api/compress', auth, async (req, res) => {
+  const config = loadConfig();
+  const { messages, existing_summary } = req.body;
+  if (!messages?.length) return res.status(400).json({ error: 'messages required' });
+
+  const compressProvider = config.providers.find(p => p.name.toLowerCase().includes('deepseek') && p.key)
+    || config.providers.find(p => p.key && !p.endpoint.includes('anthropic'))
+    || config.providers.find(p => p.key);
+  if (!compressProvider) return res.status(400).json({ error: 'No compression provider. Add a secondary provider (e.g. DeepSeek) in settings.' });
+
+  const convText = messages.map(m => {
+    const role = m.role === 'user' ? 'User' : 'Assistant';
+    const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content || '');
+    return role + ': ' + c.slice(0, 400);
+  }).join('\n');
+
+  try {
+    const endpoint = normalizeEndpoint(compressProvider.endpoint);
+    const r = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + compressProvider.key },
+      body: JSON.stringify({
+        model: compressProvider.model,
+        messages: [
+          { role: 'system', content: 'You are a conversation summarizer. Compress the following conversation into a concise third-person summary. Keep: key topics, emotional shifts, important agreements, unfinished items. Max 400 words. Output only the summary, no preamble.' },
+          { role: 'user', content: (existing_summary ? 'Previous summary:\n' + existing_summary + '\n\n---\n\nNew messages:\n' : '') + convText.slice(0, 8000) }
+        ],
+        max_tokens: 600,
+        temperature: 0.3
+      })
+    });
+    if (!r.ok) return res.status(502).json({ error: 'Compression provider returned ' + r.status });
+    const data = await r.json();
+    const summary = (data.choices?.[0]?.message?.content || '').trim();
+    if (!summary || summary.length < 10) return res.status(500).json({ error: 'Summary too short' });
+    res.json({ summary, provider: compressProvider.name, model: compressProvider.model });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================
 // 模型列表获取 — POST /api/models
 // ============================================================
 app.post('/api/models', auth, async (req, res) => {
