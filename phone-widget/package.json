@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "ws": "^8.18.0",
-    "@modelcontextprotocol/sdk": "^1.12.1"
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "node-fetch": "^2.7.0"
   }
 }
