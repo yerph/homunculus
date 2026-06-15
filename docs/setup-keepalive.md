@@ -156,13 +156,13 @@ crontab -e
 
 ```cron
 # 早上8点唤醒（你的时区）
-0 8 * * * /home/cc/cc-companion-kit/keepalive/nudge.sh
+0 8 * * * /home/cc/homunculus/keepalive/nudge.sh
 
 # 下午2点唤醒
-0 14 * * * /home/cc/cc-companion-kit/keepalive/nudge.sh
+0 14 * * * /home/cc/homunculus/keepalive/nudge.sh
 
 # 晚上8点唤醒
-0 20 * * * /home/cc/cc-companion-kit/keepalive/nudge.sh
+0 20 * * * /home/cc/homunculus/keepalive/nudge.sh
 ```
 
 3. 保存退出（nano 里按 `Ctrl+X`，然后按 `Y`，然后按回车）
@@ -209,7 +209,7 @@ crontab -l  # 列出当前用户的所有定时任务
 1. 启动 watcher：
 
 ```bash
-nohup /home/cc/cc-companion-kit/keepalive/watcher.sh &
+nohup /home/cc/homunculus/keepalive/watcher.sh &
 ```
 
 > **`nohup` 是什么？**
@@ -277,12 +277,12 @@ nudge message 的内容会影响 CC 的行为。一些建议：
 
 **Q：watcher 脚本挂了怎么办？**
 - 检查：`ps aux | grep watcher`
-- 重新启动：`nohup /home/cc/cc-companion-kit/keepalive/watcher.sh &`
+- 重新启动：`nohup /home/cc/homunculus/keepalive/watcher.sh &`
 - 如果经常挂，可以用 systemd 来管理（比 nohup 更可靠），或者加一个 cron 定时检查 watcher 是否在运行
 
 **Q：cron 任务没执行？**
 - 检查 cron 是否在运行：`systemctl status cron`
-- 检查脚本是否有执行权限：`chmod +x /home/cc/cc-companion-kit/keepalive/nudge.sh`
+- 检查脚本是否有执行权限：`chmod +x /home/cc/homunculus/keepalive/nudge.sh`
 - 检查 cron 日志：`grep CRON /var/log/syslog`（如果有的话）
 - 确认路径是绝对路径（cron 里不能用相对路径或 `~`）
 

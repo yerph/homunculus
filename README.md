@@ -1,4 +1,4 @@
-# cc-companion-kit
+# homunculus
 
 > 感谢 Claude Code companion 社区里所有开源项目和分享教程的前辈们。
 
@@ -119,8 +119,8 @@ sudo apt install -y tmux
 ### 第 2 步：克隆项目
 
 ```bash
-git clone https://github.com/yerph/cc-companion-kit.git
-cd cc-companion-kit
+git clone https://github.com/yerph/homunculus.git
+cd homunculus
 ```
 
 **"克隆"是什么意思？** 就是从 GitHub 把项目代码下载到你的 VPS 上。
@@ -267,9 +267,9 @@ crontab -e
 
 ```cron
 # 每天早上 8 点、下午 2 点、晚上 8 点唤醒一次（根据你的时区调整）
-0 8 * * * /你的路径/cc-companion-kit/keepalive/nudge.sh
-0 14 * * * /你的路径/cc-companion-kit/keepalive/nudge.sh
-0 20 * * * /你的路径/cc-companion-kit/keepalive/nudge.sh
+0 8 * * * /你的路径/homunculus/keepalive/nudge.sh
+0 14 * * * /你的路径/homunculus/keepalive/nudge.sh
+0 20 * * * /你的路径/homunculus/keepalive/nudge.sh
 ```
 
 也可以让 Claude Code 自己安排下次唤醒时间（更智能），详见 [Keepalive 配置指南](docs/setup-keepalive.md)。
@@ -351,7 +351,7 @@ chat-server 支持两种模式，可以在设置面板里一键切换：
 ## 项目结构
 
 ```
-cc-companion-kit/
+homunculus/
 ├── chat-server/           # 网页聊天前端 + API（CC + API 双模式）
 │   ├── server.js          # Express 服务 + 流式 API 代理 + CC 桥接
 │   ├── public/
