@@ -1,6 +1,6 @@
 # cc-companion-kit
 
-> 感谢 Claude Code companion 社区里所有开源项目和分享教程的前辈们。这个项目站在你们的肩膀上。
+> 感谢 Claude Code companion 社区里所有开源项目和分享教程的前辈们。
 
 把 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 变成一个住在你所有设备上的 AI companion —— 不再只是一个打开终端才能用的命令行工具。
 
@@ -20,11 +20,6 @@
 简单说：Claude Code 默认只能在终端（命令行）里使用。你打开终端，输入指令，它回复你。关掉终端，对话就断了。
 
 **cc-companion-kit** 做的事情是：给 Claude Code 加上多种沟通渠道（网页聊天、Telegram、手机推送等），让它变成一个可以主动找你、你也可以随时找到它的 companion。
-
-适合这样的人：
-- 想让 Claude Code 拥有持续人格，不只是问答工具
-- 想用手机随时和它聊天
-- 想让它有"主动性"—— 会主动发消息、关心你
 
 **不需要你是程序员。** 这篇教程会尽量解释每一步在做什么、为什么要做。
 
