@@ -1,6 +1,6 @@
 # homunculus
 
-> 感谢 Claude Code companion 社区里所有开源项目和分享教程的前辈们。
+> 感谢社区里所有开源项目和分享教程的前辈们。
 
 一套多渠道 AI companion 系统 —— 支持 **Claude Code 模式**和 **API 模式**双模切换。
 
@@ -444,7 +444,7 @@ API 模式需要你有对应服务商的 API Key（比如 Anthropic API Key 或 
 
 ## 致谢
 
-由 [yerph](https://github.com/yerph) 搭建，感谢 Claude Code companion 社区的启发。
+由 [yerph](https://github.com/yerph) 搭建，感谢整个社区的前辈们的启发。
 
 ## 许可证
 
