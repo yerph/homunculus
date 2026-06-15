@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<!-- CUSTOMIZE: change the title to your companion's name -->
+<title>Companion</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1a1d28">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+/* ============================================================
+ *  CSS VARIABLES — NEUTRAL DARK THEME
+ *  CUSTOMIZE: change these to match your aesthetic
+ * ============================================================ */
+:root {
+  --bg: #1a1d28;
+  --bg-light1: rgba(40, 45, 65, 0.5);
+  --bg-light2: rgba(55, 60, 80, 0.35);
+  --card: rgba(35, 40, 55, 0.75);
+  --card-solid: #252a3a;
+  --ink: #e0e4f0;
+  --muted: #8b92a8;
+  --weak: #5a6178;
+  --accent: #7b8cb8;
+  --line: rgba(130, 140, 170, 0.18);
+  --shadow: 0 10px 30px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.15);
+  --shadow-soft: 0 6px 18px rgba(0,0,0,0.2);
+
+  /* Chat colors */
+  --sent: #5b6fa8;
+  --sent-ink: #fff;
+  --recv: #2c3044;
+  --recv-ink: #e0e4f0;
+
+  /* Status colors */
+  --good: #6daa88;
+  --warm: #b87888;
+  --gold: #c8a856;
+
+  /* Phone frame */
+  --phone-bg: #1a1d28;
+  --shell-border: #14171f;
+}
+
+/* ============================================================
+ *  BASE RESET
+ * ============================================================ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: radial-gradient(ellipse at 50% 15%, #222837 0%, #10131c 75%);
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; overflow: hidden;
+  user-select: none; -webkit-user-select: none;
+}
+/* When embedded in an iframe, fill the container */
+body.in-iframe {
+  background: var(--bg) !important; display: block !important;
+  width: 100% !important; height: 100% !important; overflow: hidden !important;
+}
+body.in-iframe #phone {
+  width: 100% !important; height: 100% !important; min-height: 100vh;
+  border-radius: 0 !important; box-shadow: none !important;
+}
+body.in-iframe #notch { display: none; }
+body.in-iframe #statusbar { top: 0; padding-top: 6px; height: 32px; }
+body.in-iframe #home { padding-top: 38px; }
+
+/* ============================================================
+ *  PHONE SHELL
+ * ============================================================ */
+#phone {
+  position: relative; width: 390px; height: 844px;
+  background:
+    radial-gradient(480px 320px at 18% 6%, var(--bg-light1), transparent 60%),
+    radial-gradient(420px 300px at 85% 28%, var(--bg-light2), transparent 65%),
+    var(--bg);
+  border-radius: 50px;
+  box-shadow: 0 0 0 10px var(--shell-border), 0 0 0 12px #2c3140, 0 38px 90px rgba(0,0,0,0.7);
+  overflow: hidden; transform-origin: top center;
+}
+#notch {
+  position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+  width: 118px; height: 32px; background: var(--shell-border); border-radius: 18px;
+  z-index: 300; pointer-events: none;
+}
+#notch::after {
+  content: ""; position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+  width: 9px; height: 9px; border-radius: 50%; background: #0e1018;
+  box-shadow: inset 0 0 3px #2a3045;
+}
+
+/* ============================================================
+ *  STATUS BAR
+ * ============================================================ */
+#statusbar {
+  position: absolute; top: 0; left: 0; right: 0; height: 52px; z-index: 250;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 13px 28px 0; pointer-events: none;
+  font-size: 13.5px; font-weight: 600; color: var(--ink);
+}
+#statusbar .right {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11px; font-weight: 500; color: var(--muted);
+}
+.batt {
+  width: 24px; height: 12px; border: 1px solid var(--muted); border-radius: 4px;
+  position: relative; padding: 1.5px; opacity: 0.9;
+}
+.batt::after {
+  content: ""; position: absolute; right: -4px; top: 3px;
+  width: 2px; height: 5px; background: var(--muted); border-radius: 0 2px 2px 0;
+}
+.batt b { display: block; height: 100%; width: 78%; background: var(--muted); border-radius: 2px; }
+
+/* ============================================================
+ *  SCREENS
+ * ============================================================ */
+.screen {
+  position: absolute; inset: 0; display: none; flex-direction: column;
+  z-index: 10; background: transparent;
+}
+.screen.active { display: flex; }
+.home-indicator {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: 126px; height: 5px; border-radius: 3px; background: var(--ink);
+  opacity: 0.35; z-index: 280; cursor: pointer; display: none;
+}
+.home-indicator.show { display: block; }
+
+/* Shared card style */
+.soft {
+  background: var(--card); backdrop-filter: blur(22px) saturate(1.15);
+  border-radius: 26px; box-shadow: var(--shadow);
+  border: 1px solid rgba(130, 140, 170, 0.1);
+}
+
+/* ============================================================
+ *  LOCK SCREEN
+ * ============================================================ */
+#lockscreen {
+  z-index: 200; align-items: center;
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0.27, 1), opacity 0.5s;
+}
+#lockscreen.unlocking { transform: translateY(-100%); opacity: 0.25; }
+#lock-time {
+  margin-top: 124px; font-size: 88px; font-weight: 200; color: var(--ink);
+  letter-spacing: -0.01em; line-height: 1;
+}
+#lock-date { margin-top: 10px; font-size: 15.5px; font-weight: 500; color: var(--muted); }
+/* CUSTOMIZE: change this motto to your companion's tagline */
+#lock-motto {
+  margin-top: 6px; font-size: 11.5px; color: var(--weak);
+  letter-spacing: 0.14em;
+}
+#lock-note {
+  margin-top: 34px; width: min(330px, 87%); padding: 13px 16px;
+  display: flex; gap: 12px; align-items: center; border-radius: 22px;
+}
+#lock-note .ic {
+  width: 38px; height: 38px; border-radius: 50%; background: var(--card-solid);
+  box-shadow: var(--shadow-soft); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 14px; font-weight: 600; color: var(--accent);
+}
+#lock-note .tx b { display: block; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+#lock-note .tx span { font-size: 12.5px; color: var(--muted); }
+#unlock-hint {
+  position: absolute; bottom: 46px; font-size: 12.5px; color: var(--muted);
+  letter-spacing: 0.1em; animation: floaty 2.4s ease-in-out infinite;
+}
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); opacity: 0.85; }
+  50% { transform: translateY(-7px); opacity: 0.4; }
+}
+
+/* ============================================================
+ *  HOME SCREEN — horizontal paging
+ * ============================================================ */
+#home {
+  padding: 0; overflow-x: auto; overflow-y: hidden; flex-direction: row;
+  display: none; scroll-snap-type: x mandatory; z-index: 50;
+  scrollbar-width: none;
+}
+#home.active { display: flex; }
+#home::-webkit-scrollbar { display: none; }
+.hpage {
+  flex: 0 0 100%; width: 100%; scroll-snap-align: start; scroll-snap-stop: always;
+  padding: 60px 15px 96px; display: flex; flex-direction: column; gap: 13px;
+  overflow-y: auto; scrollbar-width: none;
+}
+.hpage::-webkit-scrollbar { width: 0; }
+
+/* --- Profile hero card --- */
+#hero { border-radius: 30px; overflow: visible; position: relative; padding: 0; }
+#hero-cover {
+  height: 70px; border-radius: 30px 30px 0 0; position: relative; overflow: hidden;
+  /* CUSTOMIZE: change the cover gradient */
+  background: linear-gradient(160deg, #2b3550, #22293c, #1d2230);
+}
+#hero-av {
+  position: absolute; top: 38px; left: 50%; transform: translateX(-50%);
+  width: 56px; height: 56px; border-radius: 50%; background: var(--card-solid);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3), 0 0 0 4px var(--card-solid);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 3; font-size: 24px; color: var(--accent);
+}
+#hero-body { padding: 30px 16px 12px; text-align: center; }
+/* CUSTOMIZE: change the display name */
+#hero-name { font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: 0.01em; }
+#hero-bio {
+  margin-top: 5px; font-size: 11px; color: var(--muted);
+  line-height: 1.7; letter-spacing: 0.03em;
+}
+#hero-bio .ok { color: var(--accent); font-weight: 600; }
+#hero-tag {
+  margin-top: 7px; display: inline-block; font-size: 10.5px; color: var(--muted);
+  background: rgba(130, 140, 170, 0.12); padding: 3px 10px; border-radius: 10px;
+  letter-spacing: 0.06em;
+}
+
+/* --- App grid card --- */
+#apps-card { padding: 19px 13px 14px; border-radius: 28px; }
+#apps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 17px 6px; }
+.app {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  cursor: pointer; transition: transform 0.13s;
+}
+.app:active { transform: scale(0.88); }
+.app .icon {
+  width: 54px; height: 54px; border-radius: 19px; background: var(--card-solid);
+  box-shadow: var(--shadow-soft); position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.app .icon svg {
+  width: 27px; height: 27px; display: block; stroke: var(--accent); fill: none;
+  stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
+.app .label { font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0.04em; }
+.badge {
+  position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px;
+  border-radius: 9px; background: var(--warm); color: #fff;
+  font-size: 10.5px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; padding: 0 5px;
+}
+
+/* --- Mini stat cards --- */
+#duo-row { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.mini-card { padding: 16px 17px; border-radius: 26px; cursor: pointer; }
+.mini-card:active { opacity: 0.75; }
+.mini-card .mc-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.mini-card .mc-big {
+  font-size: 30px; font-weight: 300; color: var(--ink); line-height: 1;
+}
+.mini-card .mc-emo { font-size: 21px; }
+.mini-card .mc-name { font-size: 12px; color: var(--muted); margin-top: 9px; font-weight: 500; }
+.mini-card .mc-sub { font-size: 11px; color: var(--weak); margin-top: 2px; }
+
+/* --- Quote card --- */
+#quote-card { padding: 19px 22px; border-radius: 28px; text-align: center; }
+#quote-card .q1 { font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: 0.02em; }
+#quote-card .q2 { font-size: 12px; color: var(--muted); line-height: 2; margin-top: 7px; }
+
+/* --- Page dots + dock --- */
+#page-dots {
+  position: absolute; bottom: 13px; left: 0; right: 0;
+  display: flex; justify-content: center; gap: 7px; z-index: 55; pointer-events: none;
+}
+#page-dots i {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--weak); opacity: 0.6;
+}
+#page-dots i.on { width: 17px; border-radius: 3px; background: var(--muted); }
+
+#dock {
+  position: absolute; bottom: 16px; left: 15px; right: 15px; height: 84px; z-index: 60;
+  display: flex; align-items: center; justify-content: space-around;
+  border-radius: 30px;
+  background: rgba(35, 40, 55, 0.45);
+  backdrop-filter: blur(20px) saturate(1.25); -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.25);
+  border: 1px solid rgba(130, 140, 170, 0.1);
+}
+.dock-btn {
+  width: 56px; height: 56px; border-radius: 20px;
+  background: rgba(50, 55, 75, 0.6);
+  box-shadow: var(--shadow-soft);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: transform 0.13s; position: relative;
+}
+.dock-btn:active { transform: scale(0.88); }
+.dock-btn svg {
+  width: 25px; height: 25px; stroke: var(--ink); fill: none;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* ============================================================
+ *  NAVBAR (shared by all app screens)
+ * ============================================================ */
+.navbar {
+  height: 90px; padding: 50px 16px 0; display: flex; align-items: center;
+  flex-shrink: 0; position: relative; z-index: 5;
+  background: var(--card); backdrop-filter: blur(20px) saturate(1.2);
+  border-bottom: 1px solid var(--line);
+}
+.navbar .back {
+  font-size: 15px; color: var(--accent); cursor: pointer;
+  display: flex; align-items: center; gap: 2px; font-weight: 500;
+}
+.navbar .back::before { content: "\2039"; font-size: 25px; margin-top: -3px; }
+.navbar .title {
+  position: absolute; left: 50%; transform: translateX(-50%); top: 40px;
+  font-size: 16.5px; font-weight: 600; color: var(--ink); white-space: nowrap;
+}
+.navbar .subtitle {
+  position: absolute; left: 50%; transform: translateX(-50%); top: 60px;
+  font-size: 9.5px; color: var(--weak); letter-spacing: 0.18em; white-space: nowrap;
+  text-transform: uppercase;
+}
+.navbar .action {
+  margin-left: auto; font-size: 14.5px; color: var(--accent);
+  cursor: pointer; font-weight: 500;
+}
+
+/* ============================================================
+ *  CHAT APP (iMessage style)
+ * ============================================================ */
+#app-chat { background: var(--phone-bg); }
+.chat-header {
+  padding: 8px 16px 10px; text-align: center;
+  border-bottom: 1px solid var(--line); background: var(--card);
+  backdrop-filter: blur(12px);
+}
+.chat-contact { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.chat-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: #fff;
+  /* CUSTOMIZE: change the avatar background gradient */
+  background: linear-gradient(135deg, #3a4060, #252a3e);
+}
+/* CUSTOMIZE: change the contact name */
+.chat-contact-name { font-size: 1rem; font-weight: 500; color: var(--ink); }
+.chat-contact-sub {
+  font-size: 0.5rem; color: var(--weak); letter-spacing: 0.05em;
+}
+#chat-status {
+  font-size: 0.45rem; margin-top: 2px; padding: 1px 8px; border-radius: 8px;
+  background: rgba(255,255,255,0.06); color: var(--weak); letter-spacing: 0.03em;
+}
+.chat-messages {
+  padding: 16px; flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.chat-messages::-webkit-scrollbar { width: 3px; }
+.chat-messages::-webkit-scrollbar-thumb { background: rgba(130,140,170,0.2); border-radius: 2px; }
+.chat-ts {
+  text-align: center; font-size: 0.5rem; color: var(--weak);
+  padding: 10px 0 4px; letter-spacing: 0.05em;
+}
+.chat-msg {
+  display: flex; gap: 6px; padding: 1px 0; align-items: flex-end;
+  animation: msgIn 0.4s ease;
+}
+.chat-msg.sent { justify-content: flex-end; }
+.chat-msg.recv { justify-content: flex-start; }
+.chat-msg .msg-av {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.6rem; color: #fff;
+}
+.chat-msg.sent .msg-av { background: var(--sent); order: 2; }
+.chat-msg.recv .msg-av { background: linear-gradient(135deg, #3a4060, #252a3e); }
+.chat-bubble {
+  max-width: 72%; padding: 8px 14px; border-radius: 18px;
+  font-size: 0.88rem; line-height: 1.4; word-wrap: break-word;
+}
+.chat-msg.sent .chat-bubble {
+  background: var(--sent); color: var(--sent-ink); border-bottom-right-radius: 6px;
+}
+.chat-msg.recv .chat-bubble {
+  background: var(--recv); color: var(--recv-ink); border-bottom-left-radius: 6px;
+}
+.chat-delivery {
+  text-align: right; font-size: 0.5rem; color: var(--weak); padding: 2px 32px 0;
+}
+@keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.chat-input-bar {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+  border-top: 1px solid var(--line); background: var(--card); flex-shrink: 0;
+}
+.chat-input {
+  flex: 1; background: var(--recv); border: 1px solid var(--line); border-radius: 20px;
+  padding: 8px 14px; color: var(--ink); font-size: 0.85rem; outline: none;
+  font-family: inherit;
+}
+.chat-input::placeholder { color: var(--weak); font-style: italic; }
+.chat-send {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--sent);
+  border: none; color: #fff; font-size: 0.8rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: opacity 0.2s;
+}
+.chat-send:hover { opacity: 0.8; }
+
+/* ============================================================
+ *  TWEETS APP
+ * ============================================================ */
+#tw-compose {
+  display: flex; gap: 11px; padding: 14px 16px; flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+}
+#tw-compose .av {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  background: var(--sent); display: flex; align-items: center; justify-content: center;
+  font-size: 15px; color: #fff; font-weight: 600; box-shadow: var(--shadow-soft);
+}
+#tw-compose .col { flex: 1; display: flex; flex-direction: column; gap: 9px; }
+#tw-input {
+  background: transparent; border: none; outline: none; color: var(--ink);
+  font-size: 16px; font-family: inherit; resize: none; min-height: 44px; line-height: 1.5;
+}
+#tw-input::placeholder { color: var(--weak); }
+#tw-post {
+  align-self: flex-end; background: var(--accent); color: #fff; border: none;
+  border-radius: 17px; padding: 7px 20px; font-size: 13.5px; font-weight: 600;
+  cursor: pointer; font-family: inherit; letter-spacing: 0.1em;
+}
+#tw-post:disabled { opacity: 0.35; }
+
+#tw-feed { flex: 1; overflow-y: auto; padding: 10px 12px 30px; }
+#tw-feed::-webkit-scrollbar { width: 0; }
+.tweet {
+  display: flex; gap: 11px; padding: 15px; margin-bottom: 11px; border-radius: 24px;
+  background: var(--card); backdrop-filter: blur(18px); box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(130, 140, 170, 0.08);
+}
+.tweet.fresh { animation: tweetIn 0.35s ease; }
+@keyframes tweetIn { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+.tweet .av {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; color: #fff; font-weight: 600; box-shadow: var(--shadow-soft);
+}
+.tweet .main { flex: 1; min-width: 0; }
+.tweet .hd { display: flex; gap: 6px; align-items: baseline; font-size: 14.5px; flex-wrap: wrap; }
+.tweet .hd b { color: var(--ink); font-weight: 600; }
+.tweet .hd span { font-size: 11.5px; color: var(--weak); }
+.tweet .tx {
+  color: var(--ink); font-size: 15px; line-height: 1.65; margin-top: 4px;
+  white-space: pre-wrap; word-break: break-word;
+}
+.tweet .bar { display: flex; gap: 28px; margin-top: 10px; }
+.tweet .act {
+  display: flex; align-items: center; gap: 5px; color: var(--weak);
+  font-size: 11.5px; cursor: pointer; transition: color 0.15s; font-weight: 500;
+}
+.tweet .act .ic { font-size: 14px; transition: transform 0.15s; display: inline-block; }
+.tweet .act.liked { color: var(--warm); }
+.tweet .act:active .ic { transform: scale(1.35); }
+
+/* Tweet comments */
+.tw-comments {
+  display: none; margin-top: 10px; padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.tw-comments.open { display: block; }
+.tw-cmt { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; }
+.tw-cmt .cmt-av {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: #fff; font-weight: 600;
+}
+.tw-cmt .cmt-body { flex: 1; min-width: 0; }
+.tw-cmt .cmt-name { font-size: 12px; font-weight: 600; color: var(--ink); }
+.tw-cmt .cmt-text { font-size: 13px; color: var(--ink); line-height: 1.5; margin-top: 1px; }
+.tw-cmt .cmt-time { font-size: 10px; color: var(--weak); margin-top: 2px; }
+.tw-cmt-row { display: flex; gap: 6px; margin-top: 6px; }
+.tw-cmt-row input {
+  flex: 1; background: transparent; border: 1px solid var(--line); border-radius: 14px;
+  padding: 5px 12px; font-size: 12.5px; color: var(--ink); outline: none; font-family: inherit;
+}
+.tw-cmt-row input::placeholder { color: var(--weak); }
+.tw-cmt-row button {
+  background: var(--accent); color: #fff; border: none; border-radius: 14px;
+  padding: 4px 12px; font-size: 12px; cursor: pointer; font-family: inherit;
+}
+
+/* ============================================================
+ *  MAIL APP
+ * ============================================================ */
+#mail-list { flex: 1; overflow-y: auto; }
+#mail-list::-webkit-scrollbar { width: 0; }
+.mail-item {
+  padding: 13px 16px 13px 28px; border-bottom: 1px solid var(--line);
+  cursor: pointer; position: relative;
+}
+.mail-item:active { background: var(--card); }
+.mail-item.unread::before {
+  content: ""; position: absolute; left: 11px; top: 20px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+}
+.mail-item .row1 { display: flex; justify-content: space-between; align-items: baseline; }
+.mail-item .from { font-size: 16px; font-weight: 600; color: var(--ink); }
+.mail-item .time { font-size: 12px; color: var(--weak); }
+.mail-item .subj { font-size: 14.5px; color: var(--ink); margin-top: 2px; }
+.mail-item .prev {
+  font-size: 13px; color: var(--muted); margin-top: 2px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; line-height: 1.45;
+}
+#mail-read {
+  flex: 1; overflow-y: auto; padding: 18px 20px 40px; display: none;
+}
+#mail-read::-webkit-scrollbar { width: 0; }
+#mail-read h2 { color: var(--ink); font-size: 20px; font-weight: 700; line-height: 1.4; }
+#mail-read .meta {
+  display: flex; gap: 12px; align-items: center; margin: 14px 0 18px;
+  padding-bottom: 14px; border-bottom: 1px solid var(--line);
+}
+#mail-read .meta .av {
+  width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #fff; flex-shrink: 0; font-weight: 600;
+  box-shadow: var(--shadow-soft);
+}
+#mail-read .meta .nm { font-size: 15px; color: var(--ink); font-weight: 600; }
+#mail-read .meta .to { font-size: 12.5px; color: var(--muted); }
+#mail-read .body {
+  color: var(--ink); font-size: 15px; line-height: 1.85; white-space: pre-wrap;
+}
+
+/* ============================================================
+ *  SETTINGS
+ * ============================================================ */
+#settings-body { flex: 1; overflow-y: auto; padding: 16px; }
+.set-group { overflow: hidden; margin-bottom: 22px; border-radius: 24px; }
+.set-row {
+  display: flex; align-items: center; gap: 13px; padding: 14px 17px;
+  border-bottom: 1px solid var(--line); cursor: pointer;
+  color: var(--ink); font-size: 15px; font-weight: 500;
+}
+.set-row:last-child { border-bottom: none; }
+.set-row .chev { margin-left: auto; color: var(--weak); font-size: 17px; }
+.set-title {
+  color: var(--weak); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.28em; margin: 0 0 9px 7px; text-transform: uppercase;
+}
+#about-card {
+  padding: 19px; color: var(--ink); font-size: 13.5px; line-height: 2.15;
+}
+</style>
+</head>
+<body>
+
+<div id="phone">
+  <div id="notch"></div>
+  <div id="statusbar">
+    <span id="sb-time">9:41</span>
+    <div class="right">
+      <!-- CUSTOMIZE: change this label -->
+      <span>companion</span>
+      <div class="batt"><b></b></div>
+    </div>
+  </div>
+  <div class="home-indicator" id="homebar"></div>
+
+  <!-- ============================================================
+       LOCK SCREEN
+       ============================================================ -->
+  <div id="lockscreen" class="screen active">
+    <div id="lock-time">--:--</div>
+    <div id="lock-date">--</div>
+    <!-- CUSTOMIZE: change the lock screen motto -->
+    <div id="lock-motto">companion online</div>
+    <div id="lock-note" class="soft">
+      <!-- CUSTOMIZE: change the notification preview -->
+      <div class="ic">C</div>
+      <div class="tx">
+        <b>Companion</b>
+        <span>Tap to open your phone.</span>
+      </div>
+    </div>
+    <div id="unlock-hint">tap to wake</div>
+  </div>
+
+  <!-- ============================================================
+       HOME SCREEN
+       ============================================================ -->
+  <div id="home" class="screen">
+
+    <!-- ===== Page 1: Profile + Quick Info ===== -->
+    <div class="hpage">
+      <div id="hero" class="soft">
+        <div id="hero-cover"></div>
+        <!-- CUSTOMIZE: change the avatar letter/emoji -->
+        <div id="hero-av">C</div>
+        <div id="hero-body">
+          <!-- CUSTOMIZE: change the display name and bio -->
+          <div id="hero-name">Companion</div>
+          <div id="hero-bio">
+            signal: <span class="ok">online</span> &middot; ready to talk
+          </div>
+          <div id="hero-tag">home</div>
+        </div>
+      </div>
+
+      <div id="duo-row">
+        <div class="mini-card soft" onclick="openApp('chat')">
+          <div class="mc-top">
+            <div class="mc-big" id="mc-msgs">0</div>
+            <div class="mc-emo">💬</div>
+          </div>
+          <div class="mc-name">Messages</div>
+          <div class="mc-sub">tap to chat</div>
+        </div>
+        <div class="mini-card soft" onclick="openApp('tweets')">
+          <div class="mc-top">
+            <div class="mc-big" id="mc-tweets">0</div>
+            <div class="mc-emo">📝</div>
+          </div>
+          <div class="mc-name">Tweets</div>
+          <div class="mc-sub">companion thoughts</div>
+        </div>
+      </div>
+
+      <!-- CUSTOMIZE: change this quote -->
+      <div id="quote-card" class="soft">
+        <div class="q1">Welcome to your companion's phone.</div>
+        <div class="q2">
+          Chat in real-time, read their tweets,<br>
+          and check your postcards. All in one place.
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Page 2: App Grid ===== -->
+    <div class="hpage">
+      <div id="apps-card" class="soft">
+        <div id="apps-grid">
+          <div class="app" data-app="chat">
+            <div class="icon">
+              <svg viewBox="0 0 32 32"><path d="M16 5C9.4 5 4 9.5 4 15c0 3.1 1.7 5.9 4.4 7.7-.2 1.7-1 3.2-2.1 4.3 2.1-.3 4-1.1 5.4-2.3 1.4.4 2.8.6 4.3.6 6.6 0 12-4.5 12-10.3S22.6 5 16 5z"/></svg>
+              <span class="badge" id="msg-badge" style="display:none">0</span>
+            </div>
+            <span class="label">Chat</span>
+          </div>
+          <div class="app" data-app="tweets">
+            <div class="icon">
+              <svg viewBox="0 0 32 32"><path d="M4 7h24M4 13h18M4 19h22M4 25h14"/></svg>
+            </div>
+            <span class="label">Tweets</span>
+          </div>
+          <div class="app" data-app="mail">
+            <div class="icon">
+              <svg viewBox="0 0 32 32"><rect x="4.5" y="8" width="23" height="17" rx="3"/><path d="M5.5 9.5L16 18 26.5 9.5"/></svg>
+              <span class="badge" id="mail-badge" style="display:none">0</span>
+            </div>
+            <span class="label">Mail</span>
+          </div>
+          <div class="app" data-app="settings">
+            <div class="icon">
+              <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="5.5"/><path d="M16 4.5v3.2M16 24.3v3.2M27.5 16h-3.2M7.7 16H4.5M24.1 7.9l-2.2 2.2M10.1 21.9l-2.2 2.2M24.1 24.1l-2.2-2.2M10.1 10.1L7.9 7.9"/></svg>
+            </div>
+            <span class="label">Settings</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-dots"><i class="on"></i><i></i></div>
+
+    <div id="dock">
+      <div class="dock-btn" data-app="chat">
+        <svg viewBox="0 0 32 32"><path d="M16 5C9.4 5 4 9.5 4 15c0 3.1 1.7 5.9 4.4 7.7-.2 1.7-1 3.2-2.1 4.3 2.1-.3 4-1.1 5.4-2.3 1.4.4 2.8.6 4.3.6 6.6 0 12-4.5 12-10.3S22.6 5 16 5z"/></svg>
+        <span class="badge" id="dock-msg-badge" style="display:none">!</span>
+      </div>
+      <div class="dock-btn" data-app="tweets">
+        <svg viewBox="0 0 32 32"><path d="M4 7h24M4 13h18M4 19h22M4 25h14"/></svg>
+      </div>
+      <div class="dock-btn" data-app="settings">
+        <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="5.5"/><path d="M16 4.5v3.2M16 24.3v3.2M27.5 16h-3.2M7.7 16H4.5M24.1 7.9l-2.2 2.2M10.1 21.9l-2.2 2.2M24.1 24.1l-2.2-2.2M10.1 10.1L7.9 7.9"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       APP: CHAT
+       ============================================================ -->
+  <div id="app-chat" class="screen">
+    <div class="navbar">
+      <div class="back" data-back>back</div>
+      <div class="title">Chat</div>
+      <div class="subtitle">messages</div>
+    </div>
+    <div class="chat-header">
+      <div class="chat-contact">
+        <!-- CUSTOMIZE: change avatar letter and name -->
+        <div class="chat-avatar">C</div>
+        <div class="chat-contact-name">Companion</div>
+        <div class="chat-contact-sub">real-time chat</div>
+        <div id="chat-status">connecting...</div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-msgs"></div>
+    <div class="chat-input-bar">
+      <input class="chat-input" id="chat-input" placeholder="Type a message..."
+             onkeypress="if(event.key==='Enter')sendChatMsg()">
+      <button class="chat-send" onclick="sendChatMsg()">&#8593;</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       APP: TWEETS
+       ============================================================ -->
+  <div id="app-tweets" class="screen">
+    <div class="navbar">
+      <div class="back" data-back>back</div>
+      <div class="title">Tweets</div>
+      <div class="subtitle">timeline</div>
+      <div class="action" id="tw-refresh" onclick="twLoad()">refresh</div>
+    </div>
+    <div id="tw-compose">
+      <!-- CUSTOMIZE: change the avatar letter -->
+      <div class="av">U</div>
+      <div class="col">
+        <textarea id="tw-input" rows="2" placeholder="What's on your mind..."></textarea>
+        <button id="tw-post">Post</button>
+      </div>
+    </div>
+    <div id="tw-feed"></div>
+  </div>
+
+  <!-- ============================================================
+       APP: MAIL
+       ============================================================ -->
+  <div id="app-mail" class="screen">
+    <div class="navbar">
+      <div class="back" data-back id="mail-back">back</div>
+      <div class="title" id="mail-title">Inbox</div>
+      <div class="subtitle">postcards</div>
+      <div class="action" id="mail-markall">mark read</div>
+    </div>
+    <div id="mail-list"></div>
+    <div id="mail-read">
+      <h2 id="mr-subj"></h2>
+      <div class="meta">
+        <div class="av" id="mr-av" style="background:var(--accent)"></div>
+        <div>
+          <div class="nm" id="mr-from"></div>
+          <div class="to">to me</div>
+        </div>
+      </div>
+      <div class="body" id="mr-body"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       APP: SETTINGS
+       ============================================================ -->
+  <div id="app-settings" class="screen">
+    <div class="navbar">
+      <div class="back" data-back>back</div>
+      <div class="title">Settings</div>
+      <div class="subtitle">preferences</div>
+    </div>
+    <div id="settings-body">
+      <div class="set-title">general</div>
+      <div class="set-group soft">
+        <div class="set-row" id="reset-mail">Reset unread mail <div class="chev">&rsaquo;</div></div>
+      </div>
+      <div class="set-title">about this phone</div>
+      <div class="set-group soft">
+        <!-- CUSTOMIZE: change the about info -->
+        <div id="about-card">
+          <b>Model</b> &mdash; Companion Phone Widget<br>
+          <b>System</b> &mdash; cc-companion-kit v1.0<br>
+          <b>Built with</b> &mdash; Claude Code + Node.js<br>
+          <b>Source</b> &mdash; github.com/your-repo/cc-companion-kit
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+/* Global error overlay for debugging */
+window.onerror = function(msg, url, line) {
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:red;color:#fff;font-size:11px;padding:6px 10px;z-index:99999;word-break:break-all';
+  d.textContent = 'JS ERROR L' + line + ': ' + msg;
+  document.body.appendChild(d);
+};
+
+/* Detect iframe embedding */
+if (window.parent !== window) {
+  document.body.classList.add('in-iframe');
+}
+
+/* ============================================================
+ *  UTILITY
+ * ============================================================ */
+var $ = function(s) { return document.querySelector(s); };
+var $$ = function(s) { return document.querySelectorAll(s); };
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function safeStore(key, fallback) {
+  try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch(e) { return fallback; }
+}
+function safeSet(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+}
+
+function escapeHtml(text) {
+  return text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function timeLabel(ts) {
+  if (!ts) return '';
+  var d = new Date(ts), now = new Date();
+  var diff = now - d;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+  if (diff < 86400000) return d.getHours() + ':' + pad(d.getMinutes());
+  if (diff < 172800000) return 'yesterday';
+  return (d.getMonth() + 1) + '/' + d.getDate();
+}
+
+/* ============================================================
+ *  SCREEN NAVIGATION
+ * ============================================================ */
+var currentScreen = 'lockscreen';
+
+function show(id) {
+  $$('.screen').forEach(function(s) { s.classList.remove('active'); });
+  $('#' + id).classList.add('active');
+  currentScreen = id;
+  $('#homebar').classList.toggle('show', id !== 'lockscreen' && id !== 'home');
+}
+
+function openApp(name) {
+  show('app-' + name);
+  if (name === 'chat') { loadChatHistory(); }
+  if (name === 'tweets') { twLoad(); }
+  if (name === 'mail') { loadDynamicMails(); }
+}
+
+/* Bind app icons and dock buttons */
+$$('.app, .dock-btn').forEach(function(a) {
+  a.addEventListener('click', function() {
+    if (a.dataset.app) openApp(a.dataset.app);
+  });
+});
+
+/* Back buttons */
+$$('[data-back]').forEach(function(b) {
+  b.addEventListener('click', function() { show('home'); });
+});
+
+/* Home indicator */
+$('#homebar').addEventListener('click', function() { show('home'); });
+
+/* ============================================================
+ *  PHONE SCALING (for desktop viewing)
+ * ============================================================ */
+function fit() {
+  var ph = $('#phone');
+  if (document.body.classList.contains('in-iframe')) {
+    ph.style.transform = ''; ph.style.marginTop = '';
+    return;
+  }
+  var w = innerWidth, h = innerHeight;
+  var sc = Math.min(w / 418, h / 872, 1);
+  if (sc < 1) {
+    ph.style.transform = 'scale(' + sc + ')';
+    ph.style.marginTop = Math.max((h - 844 * sc) / 2, 6) + 'px';
+  } else {
+    ph.style.transform = ''; ph.style.marginTop = '';
+  }
+}
+addEventListener('resize', fit);
+fit();
+
+/* ============================================================
+ *  CLOCK
+ * ============================================================ */
+function tickTime() {
+  var d = new Date();
+  var t = d.getHours() + ':' + pad(d.getMinutes());
+  $('#sb-time').textContent = t;
+  $('#lock-time').textContent = t;
+  var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  $('#lock-date').textContent = days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate();
+}
+tickTime();
+setInterval(tickTime, 1000);
+
+/* ============================================================
+ *  LOCK SCREEN — tap or swipe up to unlock
+ * ============================================================ */
+(function() {
+  var ls = $('#lockscreen');
+  var startY = null, unlocking = false;
+
+  ls.addEventListener('touchstart', function(e) { startY = e.touches[0].clientY; }, { passive: true });
+  ls.addEventListener('touchend', function(e) {
+    if (startY !== null && startY - e.changedTouches[0].clientY > 60) unlock();
+    startY = null;
+  });
+  ls.addEventListener('click', unlock);
+
+  function unlock() {
+    if (unlocking) return;
+    unlocking = true;
+    ls.classList.add('unlocking');
+    setTimeout(function() { show('home'); ls.classList.remove('unlocking'); unlocking = false; }, 460);
+  }
+})();
+
+/* ============================================================
+ *  HOME SCREEN — page dots
+ * ============================================================ */
+(function() {
+  var hm = $('#home');
+  hm.addEventListener('scroll', function() {
+    var p = Math.round(hm.scrollLeft / Math.max(1, hm.clientWidth));
+    $$('#page-dots i').forEach(function(d, i) { d.classList.toggle('on', i === p); });
+  }, { passive: true });
+})();
+
+/* ============================================================
+ *  WEBSOCKET — real-time chat connection
+ * ============================================================ */
+
+/* CUSTOMIZE: set this to match AUTH_TOKEN in server.js (empty string = no auth) */
+var WS_TOKEN = '';
+
+var ws = null, wsReady = false, ccOnline = false;
+var reconnTimer = null;
+
+function connectWS() {
+  var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  var url = proto + '//' + location.host + '/';
+  ws = new WebSocket(url);
+
+  ws.onopen = function() {
+    if (WS_TOKEN) {
+      ws.send(JSON.stringify({ type: 'auth', token: WS_TOKEN }));
+    }
+    /* If no token needed, server auto-auths on connect */
+  };
+
+  ws.onmessage = function(e) {
+    var msg;
+    try { msg = JSON.parse(e.data); } catch(er) { return; }
+
+    if (msg.type === 'ping') {
+      try { ws.send(JSON.stringify({ type: 'pong' })); } catch(ex) {}
+      return;
+    }
+
+    if (msg.type === 'auth_ok') {
+      wsReady = true;
+      ccOnline = true;
+      updateChatStatus();
+    }
+
+    if (msg.type === 'auth_fail') {
+      wsReady = false;
+      updateChatStatus();
+    }
+
+    /* Incoming assistant message */
+    if (msg.type === 'message' && msg.role === 'assistant') {
+      appendChatBubble(msg.content || '', false);
+      removeTypingIndicator();
+      if (currentScreen !== 'app-chat') {
+        var bd = $('#msg-badge'); if (bd) { bd.textContent = '!'; bd.style.display = ''; }
+        var dbd = $('#dock-msg-badge'); if (dbd) { dbd.style.display = ''; }
+      }
+    }
+
+    /* Incoming user message echo (from another tab / long-poll) */
+    if (msg.type === 'message' && msg.role === 'user') {
+      /* Only render if we did not just send it ourselves */
+    }
+
+    if (msg.type === 'cc_status') {
+      ccOnline = msg.alive;
+      updateChatStatus();
+    }
+
+    if (msg.type === 'cc_busy') {
+      if (msg.busy) { showTypingIndicator(); } else { removeTypingIndicator(); }
+    }
+
+    if (msg.type === 'error') {
+      removeTypingIndicator();
+    }
+
+    /* Real-time tweet updates */
+    if (msg.type === 'tweet_new') {
+      var feed = $('#tw-feed');
+      if (feed) {
+        var existing = feed.querySelector('[data-id="' + msg.tweet.id + '"]');
+        if (!existing) {
+          feed.insertBefore(buildTweetEl(msg.tweet, true), feed.firstChild);
+        }
+      }
+    }
+    if (msg.type === 'tweet_like') {
+      var card = document.querySelector('[data-id="' + msg.id + '"]');
+      if (card) {
+        var lk = card.querySelector('.lk');
+        /* CUSTOMIZE: change 'user' to your username */
+        var myLiked = msg.likes.indexOf('user') >= 0;
+        lk.classList.toggle('liked', myLiked);
+        lk.querySelector('.ic').textContent = myLiked ? '♥' : '♡';
+        lk.querySelector('.n').textContent = msg.likes.length;
+      }
+    }
+    if (msg.type === 'tweet_comment') {
+      var card = document.querySelector('[data-id="' + msg.tweet_id + '"]');
+      if (card) {
+        var list = card.querySelector('.cmt-list');
+        list.appendChild(buildCommentEl(msg.comment));
+        var cn = card.querySelector('.cm .n');
+        if (cn) cn.textContent = msg.total;
+      }
+    }
+    if (msg.type === 'tweet_delete') {
+      var card = document.querySelector('[data-id="' + msg.id + '"]');
+      if (card) card.remove();
+    }
+
+    /* Real-time mail */
+    if (msg.type === 'mail_new') {
+      var m = msg.mail;
+      m.time = timeLabel(m.ts);
+      if (!MAILS.find(function(x) { return x.id === m.id; })) {
+        MAILS.unshift(m);
+        renderMailList();
+        var bd = $('#mail-badge');
+        if (bd) { bd.textContent = '!'; bd.style.display = ''; }
+      }
+    }
+  };
+
+  ws.onclose = function() {
+    wsReady = false; ccOnline = false;
+    updateChatStatus();
+    if (!reconnTimer) {
+      reconnTimer = setTimeout(function() { reconnTimer = null; connectWS(); }, 3000);
+    }
+  };
+
+  ws.onerror = function() {};
+}
+
+function updateChatStatus() {
+  var el = $('#chat-status');
+  if (el) el.textContent = ccOnline ? 'online' : 'offline';
+}
+
+/* ============================================================
+ *  CHAT — message rendering
+ * ============================================================ */
+
+function loadChatHistory() {
+  fetch('/api/recent').then(function(r) { return r.json(); }).then(function(msgs) {
+    var el = $('#chat-msgs');
+    if (!el) return;
+    el.innerHTML = '';
+    var lastDate = '';
+    msgs.forEach(function(m) {
+      var d = new Date(m.ts);
+      var dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (dateStr !== lastDate) {
+        el.innerHTML += '<div class="chat-ts">' + dateStr + '</div>';
+        lastDate = dateStr;
+      }
+      var isSent = m.role === 'user';
+      appendChatBubbleRaw(el, m.content || '', isSent, false);
+    });
+    el.scrollTop = el.scrollHeight;
+  }).catch(function() {});
+  /* Hide badge */
+  var bd = $('#msg-badge'); if (bd) bd.style.display = 'none';
+  var dbd = $('#dock-msg-badge'); if (dbd) dbd.style.display = 'none';
+}
+
+function appendChatBubbleRaw(container, text, isSent, animate) {
+  var cls = isSent ? 'sent' : 'recv';
+  /* CUSTOMIZE: change avatar letters */
+  var avLetter = isSent ? 'U' : 'C';
+  var avStyle = isSent
+    ? 'background:var(--sent)'
+    : 'background:linear-gradient(135deg,#3a4060,#252a3e)';
+  var div = document.createElement('div');
+  div.className = 'chat-msg ' + cls;
+  if (!animate) div.style.animation = 'none';
+  div.innerHTML =
+    '<div class="msg-av" style="' + avStyle + '">' + avLetter + '</div>' +
+    '<div class="chat-bubble">' + escapeHtml(text) + '</div>';
+  container.appendChild(div);
+}
+
+function appendChatBubble(text, isSent) {
+  var el = $('#chat-msgs');
+  if (!el) return;
+  appendChatBubbleRaw(el, text, isSent, true);
+  el.scrollTop = el.scrollHeight;
+}
+
+function showTypingIndicator() {
+  var el = $('#chat-msgs');
+  if (!el || el.querySelector('.typing-indicator')) return;
+  var div = document.createElement('div');
+  div.className = 'chat-msg recv typing-indicator';
+  div.innerHTML =
+    '<div class="msg-av" style="background:linear-gradient(135deg,#3a4060,#252a3e)">C</div>' +
+    '<div class="chat-bubble" style="opacity:.5;font-style:italic;">typing...</div>';
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  var el = $('#chat-msgs');
+  if (!el) return;
+  var t = el.querySelector('.typing-indicator');
+  if (t) t.remove();
+}
+
+function sendChatMsg() {
+  var input = $('#chat-input');
+  var text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  /* Show locally immediately */
+  appendChatBubble(text, true);
+
+  /* Send via WebSocket (real-time) */
+  if (ws && ws.readyState === WebSocket.OPEN && wsReady) {
+    ws.send(JSON.stringify({ type: 'message', content: text }));
+  } else {
+    /* Fallback: send via HTTP */
+    fetch('/api/message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: text }),
+    });
+  }
+}
+
+/* ============================================================
+ *  TWEETS
+ * ============================================================ */
+var twFeed = null;
+
+/* CUSTOMIZE: change author names and avatars to match your companion */
+var TWEET_AUTHORS = {
+  /* CUSTOMIZE: key = author id used in API, value = display config */
+  'companion': { name: 'Companion', av: 'C', color: 'var(--accent)' },
+  'user':      { name: 'You',       av: 'U', color: 'var(--sent)' },
+};
+
+function authorInfo(name) {
+  return TWEET_AUTHORS[name] || { name: name, av: name.charAt(0).toUpperCase(), color: 'var(--muted)' };
+}
+
+function buildCommentEl(cmt) {
+  var info = authorInfo(cmt.author);
+  var div = document.createElement('div');
+  div.className = 'tw-cmt';
+  div.innerHTML =
+    '<div class="cmt-av" style="background:' + info.color + '">' + info.av + '</div>' +
+    '<div class="cmt-body">' +
+      '<div class="cmt-name">' + info.name + '</div>' +
+      '<div class="cmt-text">' + escapeHtml(cmt.text) + '</div>' +
+      '<div class="cmt-time">' + timeLabel(cmt.ts) + '</div>' +
+    '</div>';
+  return div;
+}
+
+function buildTweetEl(tw, fresh) {
+  var info = authorInfo(tw.author);
+  /* CUSTOMIZE: change 'user' to your username */
+  var myLiked = (tw.likes || []).indexOf('user') >= 0;
+
+  var div = document.createElement('div');
+  div.className = 'tweet' + (fresh ? ' fresh' : '');
+  div.dataset.id = tw.id;
+  div.innerHTML =
+    '<div class="av" style="background:' + info.color + '">' + info.av + '</div>' +
+    '<div class="main">' +
+      '<div class="hd"><b>' + info.name + '</b> <span>' + timeLabel(tw.ts) + '</span></div>' +
+      '<div class="tx">' + escapeHtml(tw.text) + '</div>' +
+      '<div class="bar">' +
+        '<div class="act lk' + (myLiked ? ' liked' : '') + '" onclick="twLike(\'' + tw.id + '\')">' +
+          '<span class="ic">' + (myLiked ? '♥' : '♡') + '</span> <span class="n">' + (tw.likes || []).length + '</span>' +
+        '</div>' +
+        '<div class="act cm" onclick="twToggleComments(\'' + tw.id + '\')">' +
+          '<span class="ic">💬</span> <span class="n">' + (tw.comments || []).length + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="tw-comments">' +
+        '<div class="cmt-list"></div>' +
+        '<div class="tw-cmt-row">' +
+          '<input placeholder="Add a comment..." onkeypress="if(event.key===\'Enter\')twComment(\'' + tw.id + '\',this)">' +
+          '<button onclick="twComment(\'' + tw.id + '\',this.previousElementSibling)">Send</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  /* Populate existing comments */
+  var list = div.querySelector('.cmt-list');
+  (tw.comments || []).forEach(function(c) { list.appendChild(buildCommentEl(c)); });
+
+  return div;
+}
+
+function twLoad() {
+  twFeed = $('#tw-feed');
+  if (!twFeed) return;
+  fetch('/api/tweets').then(function(r) { return r.json(); }).then(function(tweets) {
+    twFeed.innerHTML = '';
+    if (!tweets.length) {
+      twFeed.innerHTML = '<div style="text-align:center;color:var(--weak);margin-top:60px;font-size:13px;">No tweets yet. Post the first one!</div>';
+      return;
+    }
+    tweets.forEach(function(tw) { twFeed.appendChild(buildTweetEl(tw, false)); });
+    /* Update home counter */
+    var mc = $('#mc-tweets');
+    if (mc) mc.textContent = tweets.length;
+  }).catch(function() {});
+}
+
+function twLike(id) {
+  /* CUSTOMIZE: change 'user' to your username */
+  fetch('/api/tweets/' + id + '/like', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user: 'user' }),
+  });
+}
+
+function twToggleComments(id) {
+  var card = document.querySelector('[data-id="' + id + '"]');
+  if (!card) return;
+  var cmts = card.querySelector('.tw-comments');
+  cmts.classList.toggle('open');
+}
+
+function twComment(tweetId, inputEl) {
+  var text = inputEl.value.trim();
+  if (!text) return;
+  inputEl.value = '';
+  /* CUSTOMIZE: change 'user' to your username */
+  fetch('/api/tweets/' + tweetId + '/comment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ author: 'user', text: text }),
+  });
+}
+
+/* Post a new tweet */
+(function() {
+  var btn = $('#tw-post');
+  var inp = $('#tw-input');
+  if (!btn || !inp) return;
+
+  inp.addEventListener('input', function() {
+    btn.disabled = !inp.value.trim();
+  });
+  btn.disabled = true;
+
+  btn.addEventListener('click', function() {
+    var text = inp.value.trim();
+    if (!text) return;
+    inp.value = '';
+    btn.disabled = true;
+    /* CUSTOMIZE: change 'user' to your username */
+    fetch('/api/tweets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ author: 'user', text: text }),
+    });
+  });
+})();
+
+/* ============================================================
+ *  MAIL
+ * ============================================================ */
+
+/* CUSTOMIZE: seed some default postcards for first-time visitors */
+var MAILS = [
+  {
+    from: 'Companion',
+    av: 'C',
+    col: 'var(--accent)',
+    time: 'today',
+    subj: 'Welcome to your phone',
+    unread: true,
+    body: 'Hello!\n\nThis is your first postcard. Your companion can send you more through the API.\n\nEach postcard arrives here in your inbox. Unread ones show a blue dot.\n\nTo send a postcard from your companion, POST to /api/mails with { from, subj, body }.\n\nEnjoy your phone!',
+  },
+];
+
+var mailList = $('#mail-list'), mailRead = $('#mail-read');
+
+/* Restore read state */
+(function() {
+  var read = safeStore('mail_read', []);
+  read.forEach(function(k) {
+    if (typeof k === 'number' && MAILS[k]) MAILS[k].unread = false;
+    else if (typeof k === 'string') {
+      var m = MAILS.find(function(x) { return x.id === k; });
+      if (m) m.unread = false;
+    }
+  });
+})();
+
+function loadDynamicMails() {
+  fetch('/api/mails').then(function(r) { return r.json(); }).then(function(mails) {
+    var read = safeStore('mail_read', []);
+    mails.forEach(function(m) {
+      if (MAILS.find(function(x) { return x.id === m.id; })) return;
+      m.time = timeLabel(m.ts);
+      if (read.indexOf(m.id) >= 0) m.unread = false;
+      MAILS.unshift(m);
+    });
+    renderMailList();
+  }).catch(function() {});
+}
+
+function renderMailList() {
+  if (!mailList) return;
+  mailList.innerHTML = '';
+  MAILS.forEach(function(m, i) {
+    var d = document.createElement('div');
+    d.className = 'mail-item' + (m.unread ? ' unread' : '');
+    d.innerHTML =
+      '<div class="row1"><span class="from"></span><span class="time">' + (m.time || '') + ' &rsaquo;</span></div>' +
+      '<div class="subj"></div><div class="prev"></div>';
+    d.querySelector('.from').textContent = m.from;
+    d.querySelector('.subj').textContent = m.subj;
+    d.querySelector('.prev').textContent = m.body.replace(/\n+/g, ' ');
+    d.addEventListener('click', function() { openMail(i); });
+    mailList.appendChild(d);
+  });
+  updateMailBadge();
+}
+
+function updateMailBadge() {
+  var n = MAILS.filter(function(m) { return m.unread; }).length;
+  var bd = $('#mail-badge');
+  if (bd) { bd.textContent = n; bd.style.display = n ? '' : 'none'; }
+}
+
+function openMail(i) {
+  var m = MAILS[i];
+  m.unread = false;
+  var read = safeStore('mail_read', []);
+  var key = m.id || i;
+  if (read.indexOf(key) < 0) { read.push(key); safeSet('mail_read', read); }
+  $('#mr-subj').textContent = m.subj;
+  $('#mr-from').textContent = m.from;
+  $('#mr-av').textContent = m.av;
+  $('#mr-av').style.background = m.col;
+  $('#mr-body').textContent = m.body;
+  mailList.style.display = 'none';
+  mailRead.style.display = 'block';
+  $('#mail-title').textContent = 'Mail';
+  $('#mail-back').textContent = 'Inbox';
+  $('#mail-back').dataset.mode = 'inbox';
+  updateMailBadge();
+}
+
+function closeMail() {
+  mailRead.style.display = 'none';
+  mailList.style.display = 'block';
+  $('#mail-title').textContent = 'Inbox';
+  $('#mail-back').textContent = 'back';
+  delete $('#mail-back').dataset.mode;
+  renderMailList();
+}
+
+$('#mail-back').addEventListener('click', function(e) {
+  if (e.currentTarget.dataset.mode === 'inbox') {
+    e.stopImmediatePropagation();
+    closeMail();
+  }
+}, true);
+
+$('#mail-markall').addEventListener('click', function() {
+  MAILS.forEach(function(m) { m.unread = false; });
+  var keys = MAILS.map(function(m, i) { return m.id || i; });
+  safeSet('mail_read', keys);
+  renderMailList();
+});
+
+renderMailList();
+
+/* ============================================================
+ *  SETTINGS
+ * ============================================================ */
+$('#reset-mail').addEventListener('click', function() {
+  safeSet('mail_read', []);
+  MAILS.forEach(function(m) { m.unread = true; });
+  renderMailList();
+});
+
+/* ============================================================
+ *  INIT — connect WebSocket + load initial data
+ * ============================================================ */
+connectWS();
+loadDynamicMails();
+
+/* Update message counter on home page */
+fetch('/api/recent').then(function(r) { return r.json(); }).then(function(msgs) {
+  var mc = $('#mc-msgs');
+  if (mc) mc.textContent = msgs.length;
+}).catch(function() {});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "cc-phone-widget",
+  "version": "1.0.0",
+  "description": "Mobile phone widget for Claude Code companion — chat, tweets, postcards, mini-apps",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "bridge": "node bridge.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  }
+}

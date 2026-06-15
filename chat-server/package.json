@@ -1,0 +1,14 @@
+{
+  "name": "cc-companion-chat",
+  "version": "1.0.0",
+  "description": "Web chat frontend for Claude Code via MCP web-channel plugin",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["claude-code", "chat", "mcp", "web-channel"],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
