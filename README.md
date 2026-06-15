@@ -2,24 +2,29 @@
 
 > 感谢 Claude Code companion 社区里所有开源项目和分享教程的前辈们。
 
-把 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 变成一个住在你所有设备上的 AI companion —— 不再只是一个打开终端才能用的命令行工具。
+一套多渠道 AI companion 系统 —— 支持 **Claude Code 模式**和 **API 模式**双模切换。
 
-这套工具帮你搭建一个多渠道系统，让 Claude Code 可以：
-- **在 Telegram 上和你聊天** —— 随时随地，用手机回消息
-- **住在一个网页前端里** —— 完整的聊天界面，多对话管理、表情包、代码高亮，任何浏览器都能打开
-- **主动找你说话** —— 推送通知、定时消息，不需要你先开口
-- **像真正的 App 一样安装** —— 支持 PWA，手机桌面和电脑桌面都能装，自定义图标
-- **自适应你的屏幕** —— 手机、平板、电脑都能正常显示
+**CC 模式**：把 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 从命令行工具变成一个住在你所有设备上的 companion，能主动找你聊天。
+**API 模式**：直接调用 Anthropic / OpenAI / OpenRouter 等 AI API，不依赖 Claude Code 也能用。
 
-所有服务跑在一台 VPS 上，连接到同一个 Claude Code 会话。Telegram、网页、推送通知 —— 背后都是同一个"人"在和你对话。
+两种模式共享同一套前端，一键切换。
+
+- **网页聊天** —— 完整的聊天界面，多对话管理、表情包、代码高亮，任何浏览器都能打开
+- **Telegram 聊天** —— 随时随地，用手机回消息（CC 模式）
+- **手机组件** —— iMessage 风格轻量界面，CC 与 API 双模式
+- **主动找你说话** —— 推送通知、定时消息，不需要你先开口（CC 模式）
+- **像真正的 App 一样安装** —— 支持 PWA，手机桌面和电脑桌面都能装
 
 ---
 
 ## 这个项目是什么，给谁用的
 
-简单说：Claude Code 默认只能在终端（命令行）里使用。你打开终端，输入指令，它回复你。关掉终端，对话就断了。
+这是一套 AI companion 的多渠道前端系统，支持两种工作模式：
 
-**cc-companion-kit** 做的事情是：给 Claude Code 加上多种沟通渠道（网页聊天、Telegram、手机推送等），让它变成一个可以主动找你、你也可以随时找到它的 companion。
+- **CC 模式**：Claude Code 默认只能在终端里用，这套工具给它加上网页聊天、Telegram、手机推送等渠道，让它变成一个可以主动找你、你也可以随时找到它的 companion。
+- **API 模式**：不需要 Claude Code，直接调用 Anthropic、OpenAI、OpenRouter 等 AI API。适合没有 CC 订阅、或者想用其他模型的场景。
+
+两种模式可以一键切换，共享同一套界面和对话记录。
 
 **不需要你是程序员。** 这篇教程会尽量解释每一步在做什么、为什么要做。
 
@@ -46,7 +51,7 @@
 └─────────────┘                               └─────────────────┘
 ```
 
-**核心思路：** 所有渠道的消息最终都进入同一个 Claude Code 的上下文窗口。chat-server 支持两种模式：**CC 模式**（消息发给 Claude Code）和 **API 模式**（直接调用 AI API）。Keepalive 系统会定时唤醒 CC，让它可以主动找你聊天。
+**核心思路：** 所有前端（chat-server、phone-widget）都支持 **CC 模式**和 **API 模式**双模切换。CC 模式下，消息通过 MCP 进入 Claude Code 的上下文窗口；API 模式下，消息直接发送到 AI API。Keepalive 系统会定时唤醒 CC，让它可以主动找你聊天。
 
 ---
 
