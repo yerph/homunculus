@@ -34,24 +34,128 @@
 
 下面这张图展示了所有模块怎么连在一起。不用一次看懂，后面每个模块都会单独解释。
 
+**CC 模式** —— 所有渠道的消息汇入 Claude Code 的上下文，CC 用 CLAUDE.md 中定义的身份回复。Keepalive 定时唤醒 CC，让它可以主动找你。
+
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │  Telegram    │────▶│                  │◀────│    浏览器        │
 │  (机器人)    │     │   Claude Code    │     │  (chat-server)  │
-└─────────────┘     │   (交互式会话)    │     └────────┬────────┘
-                     │                  │              │
-┌─────────────┐     │   MCP 插件：      │     ┌────────▼────────┐
-│    Bark      │◀────│   - telegram     │     │  AI API (可选)   │
-│  (推送通知)   │     │   - web-channel  │     │ Anthropic/OpenAI │
+└─────────────┘     │   (交互式会话)    │     └─────────────────┘
+                     │                  │
+┌─────────────┐     │   MCP 插件：      │     ┌─────────────────┐
+│    Bark      │◀────│   - telegram     │◀────│   手机组件       │
+│  (推送通知)   │     │   - web-channel  │     │ (phone-widget)  │
 └─────────────┘     │   - tools        │     └─────────────────┘
                      │                  │
-┌─────────────┐     │                  │     ┌─────────────────┐
-│   定时唤醒    │────▶│                  │◀────│   手机组件       │
-│ (keepalive)  │     └──────────────────┘     │ (phone-widget)  │
-└─────────────┘                               └─────────────────┘
+┌─────────────┐     │                  │
+│   定时唤醒    │────▶│                  │
+│ (keepalive)  │     └──────────────────┘
+└─────────────┘
 ```
 
-**核心思路：** 所有前端（chat-server、phone-widget）都支持 **CC 模式**和 **API 模式**双模切换。CC 模式下，消息通过 MCP 进入 Claude Code 的上下文窗口；API 模式下，消息直接发送到 AI API。Keepalive 系统会定时唤醒 CC，让它可以主动找你聊天。
+**API 模式** —— Claude Code 完全不参与。前端直接把消息发给 AI API，API 返回回复。适合 CC 不在线、或者你想用其他模型的时候。
+
+```
+┌─────────────────┐          ┌─────────────────────┐
+│    浏览器         │─────────▶│                     │
+│  (chat-server)  │◀─────────│   AI API            │
+└─────────────────┘          │   Anthropic / OpenAI │
+                              │   OpenRouter / ...   │
+┌─────────────────┐          │                     │
+│   手机组件        │─────────▶│                     │
+│ (phone-widget)  │◀─────────│                     │
+└─────────────────┘          └─────────────────────┘
+```
+
+**核心思路：** 两种模式共享同一套前端和对话记录文件。在设置面板里一键切换，不需要重启任何服务。CC 模式走 MCP 通道，API 模式走 HTTP 直连 —— Telegram 和 Keepalive 只在 CC 模式下工作，因为它们依赖 Claude Code 的持续会话。
+
+---
+
+## CC 模式 与 API 模式详解
+
+两种模式在设置面板里一键切换，不需要重启服务。切换之后你还是在同一个界面里聊天，对话记录也都在。
+
+### 共享的部分
+
+- **同一套界面**：chat-server 和 phone-widget 在两种模式下长得一模一样，所有功能（表情包、代码高亮、Markdown 渲染等）都可以用。
+- **同一份对话记录**：对话以文件形式存在 VPS 磁盘上。切换模式后打开同一个对话，能看到之前的消息历史。你可以上午用 CC 模式聊，下午切到 API 模式继续，对话不会断。
+
+### 不共享的部分
+
+两种模式的 **上下文** 是各自独立的，这是最容易搞混的地方：
+
+- **CC 模式的上下文**：Claude Code 自己维护一个上下文窗口，里面包含 CLAUDE.md（身份定义）、所有 MCP 工具的信息、以及从各个渠道（网页、Telegram、手机组件）收到的消息。CC 能"看到"的东西比单个对话多得多。
+- **API 模式的上下文**：只包含当前对话文件里的消息历史，再加上你在设置面板配置的 system prompt。API 不知道 CLAUDE.md 的存在，也看不到 Telegram 里的对话。
+
+**CC 同步（可选功能）**：如果你开启了 CC sync，系统会把 CC 模式下的对话 **摘要** 注入 API 模式的上下文，标记为 `[CC session summary]`。注意这是摘要，不是逐条消息 —— API 模式会知道 CC 聊了什么大致内容，但看不到每一句原文。
+
+**默认只在 CC 模式下工作的功能**：
+
+| 功能 | 说明 |
+|------|------|
+| **Telegram 聊天** | Telegram 插件是 Claude Code 的 MCP 工具，API 模式没有 CC 在运行，自然用不了 |
+| **Keepalive 主动消息** | 自带的脚本唤醒的是 CC 的 tmux 会话。不过 API 模式下也可以自己写定时脚本调用 AI API 实现类似效果 |
+| **Bark / 推送通知** | 自带的推送由 CC 在 keepalive 唤醒后发出。API 模式的定时脚本同样可以加上推送逻辑 |
+
+### 怎么选
+
+- **CC 模式**适合日常陪伴：完整的身份和性格（CLAUDE.md）、能主动找你、多渠道同时在线、记得跨渠道的对话。需要 Claude Code 订阅。
+- **API 模式**适合灵活场景：CC 不在线的时候、想试试其他模型（GPT-4o、DeepSeek 等）、或者没有 CC 订阅但有 API Key。随时可用，按量计费。
+
+两种模式不冲突 —— 很多人的日常是 CC 模式为主，CC 偶尔重启或维护时切 API 模式顶上。
+
+---
+
+## API 配置
+
+API 模式需要你有对应服务商的 API Key（和 Claude Code 订阅是两回事）。
+
+### 添加 Provider
+
+在 chat-server 的设置面板里，找到 **Providers** 区域：
+
+1. 选择服务商（Anthropic、OpenAI、OpenRouter、DeepSeek 等）
+2. 填入你的 API Key
+3. 选择要用的模型
+4. 保存
+
+你可以同时配置多个 Provider，在聊天时随时切换。
+
+**API Key 从哪里拿？** 每个服务商都有自己的开发者平台，注册后创建 API Key：
+- Anthropic：[console.anthropic.com](https://console.anthropic.com/)
+- OpenAI：[platform.openai.com](https://platform.openai.com/)
+- OpenRouter：[openrouter.ai](https://openrouter.ai/)
+- DeepSeek：[platform.deepseek.com](https://platform.deepseek.com/)
+
+**建议额外配一个便宜的 Provider**（比如 DeepSeek），用于对话压缩功能（下面会讲）。压缩只是做摘要，不需要最聪明的模型，便宜够用就行。
+
+API Key 保存在 VPS 上的 `chat-server/data/config.json` 文件里。这个文件不会被 git 追踪，不会意外上传到 GitHub。
+
+---
+
+## 长对话与上下文管理
+
+聊天聊久了，对话会越来越长，总会碰到上下文窗口的限制。两种模式各有各的处理方式。
+
+### API 模式：自动压缩
+
+当对话消息数超过设置面板里配置的 **最大历史消息数** 时，系统会自动把较早的消息压缩成一段滚动摘要：
+
+1. 前端把旧消息发给一个 **压缩用的 Provider**（你在设置里单独指定），让它生成一段摘要
+2. 摘要保存在对话文件里，作为后续所有消息的上下文前缀
+3. 新消息进来时，AI 看到的是：摘要 + 最近 N 条消息，而不是完整的历史记录
+
+这意味着你可以持续聊很长时间，不会因为 token 超限而报错。代价是早期的细节会被浓缩 —— 摘要保留了大致脉络，但不会记住每一句原话。
+
+**压缩 Provider 可以和聊天 Provider 不一样。** 摘要不需要很强的模型，DeepSeek 这样便宜的就够了。这样你可以用 Claude / GPT-4o 聊天，用 DeepSeek 做压缩，控制成本。
+
+**Anthropic 用户的额外福利 —— Prompt Cache：** 如果你的聊天 Provider 是 Anthropic，滚动摘要会自然形成一段稳定的上下文前缀。Anthropic 的 prompt caching 机制会识别这个前缀并缓存它，后续请求可以复用缓存，降低延迟和费用。这是自动的，不需要你做任何配置。
+
+### CC 模式：CC 自己管理
+
+Claude Code 有自己的上下文管理机制 —— 对话太长时，CC 会自动压缩较早的上下文（这是 Claude Code 内置的能力，不是这个项目做的）。
+
+如果你开启了 **CC sync**，切换到 API 模式时会带上 CC 对话的摘要。但这是 **单向的**：CC → API（摘要注入）。API 模式里聊的内容不会自动回到 CC 的上下文里。
 
 ---
 
@@ -255,6 +359,8 @@ tmux attach -t cc
 
 ### 第 9 步（可选）：配置 Keepalive 定时唤醒
 
+> **注意：本项目自带的 Keepalive 脚本是为 CC 模式设计的**，原理是定时往 Claude Code 的 tmux 会话里发一条提示，让 CC "醒来"判断要不要主动找你。如果你只用 API 模式，可以跳过这一步 —— 不过 API 模式下也完全可以实现类似的"主动性"：写一个定时脚本，用 cron 触发，直接调用 AI API 生成消息并推送（比如发 Telegram、Bark 通知等）。这不需要 Claude Code 在线，只需要一个 API Key。
+
 Keepalive 让 Claude Code 有"主动性"—— 它不只是被动等你说话，而是会定时醒来，决定要不要主动找你。
 
 最简单的方式是用 cron 定时任务：
@@ -331,12 +437,7 @@ PWA（Progressive Web App）让你的网页聊天界面可以像一个真正的 
 
 ### CC 模式 与 API 模式
 
-chat-server 支持两种模式，可以在设置面板里一键切换：
-
-- **CC 模式**（默认）：消息通过 MCP web-channel 插件发送给 Claude Code 会话，CC 用 CLAUDE.md 中的身份回复。适合日常陪伴。
-- **API 模式**：消息直接发送到 AI API（Anthropic、OpenAI、OpenRouter 等），不经过 Claude Code。适合 CC 不在线时、或者你想用不同的模型聊天。
-
-在设置面板的 Providers 里添加你的 API 密钥和模型，保存后就可以切换到 API 模式使用。
+在设置面板里一键切换，CC 模式和 API 模式的详细区别见上方 [CC 模式 与 API 模式详解](#cc-模式-与-api-模式详解)。
 
 ### CC Profile
 
