@@ -244,18 +244,27 @@ claude /telegram:access
 
 ### 第 8 步：启动所有服务
 
+推荐用 pm2 管理 Node 进程 —— 服务崩溃时它会自动重启，不需要你手动拉起来：
+
 ```bash
+# 安装 pm2（全局）
+npm install -g pm2
+
 # 启动 chat-server
-cd chat-server && node server.js &
+cd chat-server && pm2 start server.js --name chat-server
 
 # 启动 phone-widget
-cd phone-widget && node server.js &
+cd phone-widget && pm2 start server.js --name phone-widget
+
+# 设置开机自启（VPS 重启后服务自动恢复）
+pm2 save
+pm2 startup
 
 # 用 tmux 启动 Claude Code（这样关掉终端它也不会退出）
 tmux new-session -d -s cc 'claude'
 ```
 
-**如何确认服务跑起来了？** 打开浏览器，访问 `https://你的域名.com`，应该能看到登录页面。输入你在 `.env 里设置的密码，进入聊天界面。
+**如何确认服务跑起来了？** 打开浏览器，访问 `https://你的域名.com`，应该能看到登录页面。输入你在 `.env` 里设置的密码，进入聊天界面。
 
 要重新连上 Claude Code 的 tmux 会话（比如看看它在做什么）：
 
@@ -400,6 +409,22 @@ homunculus/
 ├── LICENSE
 └── README.md
 ```
+
+---
+
+## 注意事项
+
+### 安全
+
+chat-server 使用密码登录 + session 机制保护。首次访问需要输入你在 `.env` 里设置的 `CHAT_PASSWORD`，验证通过后会创建一个 session，后续请求不需要重复输入。建议设置一个强密码（不要用 `123456`），并且始终通过 HTTPS 访问。
+
+### 对话记录
+
+对话记录保存在 chat-server 的 JSON 文件中（`chat-server/conversations/` 目录），服务重启后聊天记录不会丢失。
+
+### CC 离线时的表现
+
+Claude Code 可能因为 compaction（上下文压缩）、会话过期、或手动关闭等原因暂时不可用。CC 不在线时，CC 模式下发的消息不会得到回复。你可以随时切换到 API 模式继续聊天，不需要等 CC 恢复。
 
 ---
 
