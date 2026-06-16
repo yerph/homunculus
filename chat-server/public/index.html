@@ -364,26 +364,28 @@ function msgForAPI(m){
   return{role:m.role,content:parts.join('\n\n')}
 }
 
-// CC↔API message interleaving
+// CC↔API message filtering
 function filterCCMessages(msgs){
-  var ccSync=localStorage.getItem('cc-sync')==='1';
-  if(!ccSync){return msgs.filter(function(m){return m.source!=='cc'})}
-  var result=[];var ccBlock=[];
-  for(var i=0;i<msgs.length;i++){
-    if(msgs[i].source==='cc'){ccBlock.push(msgs[i])}
-    else{
-      if(ccBlock.length>0){
-        var summary=ccBlock.map(function(m){
-          var txt=typeof m.content==='string'?m.content:JSON.stringify(m.content);
-          return (m.role==='user'?'User(CC)':'Assistant(CC)')+': '+txt.replace(/\n/g,' ').slice(0,120)
-        }).join(' | ');
-        result.push({role:'user',content:'[CC session summary] '+summary});
-        ccBlock=[]
-      }
-      result.push(msgs[i])
-    }
+  return msgs.filter(function(m){return m.source!=='cc'})
+}
+// Build CC context for server-side injection (conversation-scoped)
+function buildCCContext(msgs){
+  if(localStorage.getItem('cc-sync')!=='1')return null;
+  var ccMsgs=msgs.filter(function(m){return m.source==='cc'});
+  if(!ccMsgs.length)return null;
+  var keepN=0;
+  for(var k=Math.min(4,ccMsgs.length);k>=2;k-=2){
+    var sl=ccMsgs.slice(ccMsgs.length-k);
+    if(sl[0].role==='user'&&sl[sl.length-1].role==='assistant'){keepN=k;break}
   }
-  return result
+  var toSum=ccMsgs.slice(0,ccMsgs.length-keepN);
+  var toKeep=ccMsgs.slice(ccMsgs.length-keepN);
+  var summary='';
+  if(toSum.length>0){
+    summary='[CC session summary] '+toSum.map(function(m){var txt=typeof m.content==='string'?m.content:JSON.stringify(m.content);return(m.role==='user'?'User(CC)':'Assistant(CC)')+': '+txt.replace(/\n/g,' ').slice(0,120)}).join(' | ')
+  }
+  var recent=toKeep.map(function(m){return{role:m.role,content:m.content}});
+  return{summary:summary,recent:recent}
 }
 
 // Context trimming
@@ -631,15 +633,8 @@ async function send(){if(typeof ccMode!=='undefined'&&ccMode){var _t=$('mi').val
   S=true;AC=new AbortController();$('se').disabled=false;$('se').innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
   const el=ame('s','',null,{variants:[{content:'',usage:null}],vi:0});const md=el.querySelector('.md');md.innerHTML='<span class="cur"></span>';let ft='';let lastUsage=null;
   var apiMsg=msgForAPI({role:'user',content:content}).content;
-  if(localStorage.getItem('cc-sync')==='1'){
-    var ccMsgs=c.m.filter(function(m){return m.source==='cc'&&!m._synced});
-    if(ccMsgs.length>0){
-      var ccSum=ccMsgs.map(function(m){var t=typeof m.content==='string'?m.content:JSON.stringify(m.content);return(m.role==='user'?'User(CC)':'Assistant(CC)')+': '+t.replace(/\n/g,' ').slice(0,120)}).join(' | ');
-      apiMsg='[CC session summary] '+ccSum+'\n\n'+apiMsg;
-      c.m.forEach(function(m){if(m.source==='cc')m._synced=true});await dp(c);
-    }
-  }
-  el._tkOn=$('thk').classList.contains('on');try{const r=await fetch(B+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json','x-auth-token':T},body:JSON.stringify({conversation_id:CID,message:apiMsg,thinking:$('thk').classList.contains('on')}),signal:AC.signal});
+  var ccCtx=buildCCContext(c.m);
+  el._tkOn=$('thk').classList.contains('on');try{const r=await fetch(B+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json','x-auth-token':T},body:JSON.stringify({conversation_id:CID,message:apiMsg,thinking:$('thk').classList.contains('on'),cc_context:ccCtx||undefined}),signal:AC.signal});
     const rd=r.body.getReader();const dc=new TextDecoder();let buf='';
     while(true){const{done,value}=await rd.read();if(done)break;buf+=dc.decode(value,{stream:true});
       const lines=buf.split('\n');buf=lines.pop();

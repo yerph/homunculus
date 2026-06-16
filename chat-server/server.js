@@ -449,9 +449,20 @@ app.post('/api/chat', auth, async (req, res) => {
   const provider = config.providers.find(p => p.active);
   if (!provider?.key) return res.status(400).json({ error: 'No active provider configured' });
 
-  const { messages, system_prompt: reqSystemPrompt, thinking: enableThinking } = req.body;
-  const inputMessages = messages || [];
-  const systemPrompt = reqSystemPrompt !== undefined ? reqSystemPrompt : (loadSystemPrompt() || config.system_prompt || '');
+  const { messages, system_prompt: reqSystemPrompt, thinking: enableThinking, cc_context } = req.body;
+  let inputMessages = messages || [];
+  let systemPrompt = reqSystemPrompt !== undefined ? reqSystemPrompt : (loadSystemPrompt() || config.system_prompt || '');
+
+  // CC context injection (conversation-scoped, sent by frontend when cc-sync is on)
+  if (cc_context) {
+    if (cc_context.summary) {
+      systemPrompt = systemPrompt + '\n\n' + cc_context.summary;
+    }
+    if (cc_context.recent && cc_context.recent.length > 0 && inputMessages.length > 0) {
+      inputMessages = [...inputMessages];
+      inputMessages.splice(inputMessages.length - 1, 0, ...cc_context.recent);
+    }
+  }
 
   // 判断 provider 类型
   const isAnthropic = provider.endpoint.replace(/\/+$/, '').endsWith('/messages')
