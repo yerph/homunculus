@@ -4,7 +4,8 @@
   "description": "Web chat frontend for Claude Code companion — supports API + CC dual mode",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
   "dependencies": {

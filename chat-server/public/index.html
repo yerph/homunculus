@@ -633,8 +633,9 @@ async function send(){if(typeof ccMode!=='undefined'&&ccMode){var _t=$('mi').val
   S=true;AC=new AbortController();$('se').disabled=false;$('se').innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
   const el=ame('s','',null,{variants:[{content:'',usage:null}],vi:0});const md=el.querySelector('.md');md.innerHTML='<span class="cur"></span>';let ft='';let lastUsage=null;
   var apiMsg=msgForAPI({role:'user',content:content}).content;
+  var apiHistory=trimCtx(buildCtx(filterCCMessages(c.m),c.rolling_summary)).map(msgForAPI);
   var ccCtx=buildCCContext(c.m);
-  el._tkOn=$('thk').classList.contains('on');try{const r=await fetch(B+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json','x-auth-token':T},body:JSON.stringify({conversation_id:CID,message:apiMsg,thinking:$('thk').classList.contains('on'),cc_context:ccCtx||undefined}),signal:AC.signal});
+  el._tkOn=$('thk').classList.contains('on');try{const r=await fetch(B+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json','x-auth-token':T},body:JSON.stringify({conversation_id:CID,message:apiMsg,messages:apiHistory,thinking:$('thk').classList.contains('on'),cc_context:ccCtx||undefined,cc_sync:localStorage.getItem('cc-sync')==='1'}),signal:AC.signal});
     const rd=r.body.getReader();const dc=new TextDecoder();let buf='';
     while(true){const{done,value}=await rd.read();if(done)break;buf+=dc.decode(value,{stream:true});
       const lines=buf.split('\n');buf=lines.pop();
@@ -867,7 +868,7 @@ function handleCCMsg(msg){
     ccPendingEl=null;
     S=false;$('se').disabled=false;
     $('se').innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
-    if(CID){var _m={role:'assistant',content:msg.content,ts:Date.now(),source:'cc'};if(tk)_m.thinking=tk;(async function(){try{var c=await _idb_get(CID);if(!c)c=await dg(CID);if(!c)c={id:CID,title:'Chat',m:[],c:Date.now(),u:Date.now()};c.m.push(_m);c.u=Date.now();await dp(c)}catch(e){console.error('cc save:',e)}})();}
+    if(CID){var _m={role:'assistant',content:msg.content,ts:Date.now(),source:'cc',bridge_id:msg.id};if(tk)_m.thinking=tk;(async function(){try{var c=await _idb_get(CID);if(!c)c=await dg(CID);if(!c)c={id:CID,title:'Chat',m:[],c:Date.now(),u:Date.now()};if(!c.m.some(function(x){return x.bridge_id===msg.id})){c.m.push(_m);c.u=Date.now();await dp(c)}}catch(e){console.error('cc save:',e)}})();}
   }
 }
 
@@ -883,7 +884,7 @@ function startCCPoll(){
   ccPollTimer=setInterval(doPoll,1000);
 }
 function doPoll(){
-  fetch(B+'/cc-poll?since='+ccPollSince,{headers:{'x-auth-token':T}}).then(function(r){return r.json();}).then(function(d){
+  fetch(B+'/cc-poll?since='+ccPollSince+'&conversation_id='+encodeURIComponent(CID||''),{headers:{'x-auth-token':T}}).then(function(r){return r.json();}).then(function(d){
     if(!d.ok)return;
     var was=ccConnected;
     ccConnected=d.cc_alive;
@@ -898,7 +899,7 @@ function doPoll(){
 var ccPendingEl=null;
 function sendCC(text,img){
   if(!ccConnected)return;
-  var payload={content:text||''};
+  var payload={content:text||'',conversation_id:CID,cc_sync:localStorage.getItem('cc-sync')==='1'};
   if(img&&img.data&&!img.isText){payload.image={data:img.data,type:img.type}}
   fetch(B+'/cc-msg',{method:'POST',headers:{'Content-Type':'application/json','x-auth-token':T},body:JSON.stringify(payload)}).catch(function(){_ccSt('send error');});
   S=true;$('se').disabled=true;

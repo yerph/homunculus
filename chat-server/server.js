@@ -19,19 +19,24 @@ const fs = require('fs');
 const fetch = require('node-fetch');
 const path = require('path');
 const crypto = require('crypto');
+const { forwardAPIContext } = require('./lib/api-sync');
 
 // ============================================================
 // .env 加载器 (无额外依赖)
 // ============================================================
-const _envPath = path.join(__dirname, '.env');
-if (fs.existsSync(_envPath)) {
+const _envPath = [path.join(__dirname, '.env'), path.join(__dirname, '..', '.env')]
+  .find(file => fs.existsSync(file));
+if (_envPath) {
   fs.readFileSync(_envPath, 'utf-8').split('\n').forEach(line => {
+    if (!line.trim() || /^\s*#/.test(line)) return;
     const eq = line.indexOf('=');
-    if (eq > 0) {
-      const key = line.slice(0, eq).trim();
-      const val = line.slice(eq + 1).trim();
-      if (key && !process.env[key]) process.env[key] = val;
-    }
+    if (eq <= 0) return;
+    const key = line.slice(0, eq).trim();
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) return;
+    let val = line.slice(eq+1).trim();
+    if (!val.startsWith('\"') && !val.startsWith("'")) val = val.replace(/\s+#.*$/, '').trim();
+    if ((val.startsWith('\"') && val.endsWith('\"')) || (val.startsWith("'") && val.endsWith("'"))) val = val.slice(1,-1);
+    if (!Object.hasOwn(process.env,key)) process.env[key] = val;
   });
 }
 
@@ -47,6 +52,7 @@ const CONFIG_PATH = path.join(DATA_DIR, 'config.json');
 const PROMPT_PATH = path.join(DATA_DIR, 'system-prompt.md');
 const FOLDERS_FILE = path.join(DATA_DIR, 'folders.json');
 const STICKER_FILE = path.join(DATA_DIR, 'stickers.json');
+const LOG_FILE = path.join(DATA_DIR, 'chat-log.jsonl');
 
 // 确保目录存在
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -96,7 +102,28 @@ function normalizeEndpoint(url) {
 }
 
 function isClaudeModel(model) {
-  return model && model.toLowerCase().includes('claude');
+  return typeof model === 'string' && model.toLowerCase().includes('claude');
+}
+
+// Keep user-configured providers generic: model name alone does not imply that a
+// third-party OpenAI-compatible endpoint accepts reasoning-specific fields.
+function providerUsesAnthropicAPI(provider) {
+  return provider.api_format === 'anthropic' ||
+    (provider.api_format !== 'openai' && /\/messages\/?$/.test(provider.endpoint || ''));
+}
+function safeUpstreamError(response) {
+  // Never forward raw upstream errors: gateways can echo tokens or URLs.
+  return `Upstream provider returned HTTP ${response.status}`;
+}
+function createRequestSignal(parentSignal) {
+  const controller = new AbortController();
+  const timeoutMs = Number(process.env.API_REQUEST_TIMEOUT_MS) || 120000;
+  const timer = setTimeout(() => controller.abort(), Math.max(1000, timeoutMs));
+  if (parentSignal) {
+    if (parentSignal.aborted) controller.abort();
+    else parentSignal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+  return { signal: controller.signal, cleanup: () => clearTimeout(timer) };
 }
 
 function toAnthropicEndpoint(endpoint) {
@@ -200,9 +227,11 @@ app.use(express.static(path.join(__dirname, 'public'), {
 
 // --- 认证中间件 ---
 function auth(req, res, next) {
-  if (!PASSWORD) return next();
-  const t = req.headers['x-auth-token'] || req.query.token;
-  if (t === PASSWORD) return next();
+  if (!PASSWORD) return res.status(503).json({ error: 'CHAT_PASSWORD is not configured' });
+  const t = req.headers['x-auth-token'];
+  if (typeof t !== 'string') return res.status(401).json({ error: 'unauthorized' });
+  const x = Buffer.from(t), y = Buffer.from(PASSWORD);
+  if (x.length === y.length && crypto.timingSafeEqual(x,y)) return next();
   res.status(401).json({ error: 'unauthorized' });
 }
 
@@ -220,12 +249,13 @@ app.get('/api/config', auth, (req, res) => {
 app.post('/api/config', auth, (req, res) => {
   const current = loadConfig();
   const update = req.body;
-  // 保留未修改的 key (前端传回 ***xxxx)
-  if (update.providers) {
-    update.providers = update.providers.map((p, i) => {
-      if (p.key?.startsWith('***') && current.providers[i]) p.key = current.providers[i].key;
-      return p;
-    });
+  // Keep masked keys matched by provider name, not array position.
+  if (Array.isArray(update.providers)) {
+    const existing = new Map((current.providers || []).map(p => [p.name, p.key]));
+    update.providers = update.providers.map(p => ({
+      ...p,
+      key: (!p.key || p.key.startsWith('***')) ? (existing.get(p.name) || '') : p.key
+    }));
   }
   // system prompt 单独存文件
   if (update.system_prompt !== undefined) {
@@ -239,7 +269,7 @@ app.post('/api/config', auth, (req, res) => {
 // ============================================================
 // OpenAI 格式流式请求
 // ============================================================
-async function streamOpenAI(provider, allMsgs, sendEvent) {
+async function streamOpenAI(provider, allMsgs, sendEvent, enableThinking = false, signal) {
   const chatUrl = normalizeEndpoint(provider.endpoint);
   const reqBody = {
     model: provider.model,
@@ -248,14 +278,11 @@ async function streamOpenAI(provider, allMsgs, sendEvent) {
     stream_options: { include_usage: true }
   };
 
-  // Claude via OpenRouter — 启用 thinking
-  if (isClaudeModel(provider.model)) {
-    if (provider.endpoint.includes('openrouter.ai')) {
-      reqBody.reasoning = { max_tokens: 10000 };
-    } else {
-      reqBody.thinking = { type: 'enabled', budget_tokens: 10000 };
-      reqBody.include_reasoning = true;
-    }
+  // Reasoning is opt-in. Do not send unsupported fields to arbitrary gateways.
+  if (enableThinking && provider.reasoning_format === 'openrouter') {
+    reqBody.reasoning = { max_tokens: 10000 };
+  } else if (enableThinking && provider.reasoning_format === 'anthropic-compat') {
+    reqBody.thinking = { type: 'enabled', budget_tokens: 10000 };
   }
 
   const r = await fetch(chatUrl, {
@@ -264,15 +291,11 @@ async function streamOpenAI(provider, allMsgs, sendEvent) {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + provider.key
     },
-    body: JSON.stringify(reqBody)
+    body: JSON.stringify(reqBody),
+    signal
   });
 
-  if (!r.ok) {
-    const errText = await r.text();
-    let errMsg;
-    try { errMsg = JSON.parse(errText).error?.message || errText; } catch (e) { errMsg = errText; }
-    throw new Error(`API ${r.status}: ${errMsg}`);
-  }
+  if (!r.ok) throw new Error(safeUpstreamError(r));
 
   let fullContent = '';
   let reasoningContent = '';
@@ -317,7 +340,7 @@ async function streamOpenAI(provider, allMsgs, sendEvent) {
 // ============================================================
 // Anthropic 原生流式请求
 // ============================================================
-async function streamAnthropic(provider, systemPrompt, convMessages, sendEvent, enableThinking) {
+async function streamAnthropic(provider, systemPrompt, convMessages, sendEvent, enableThinking, signal) {
   const reqBody = {
     model: provider.model,
     max_tokens: 4096,
@@ -343,16 +366,11 @@ async function streamAnthropic(provider, systemPrompt, convMessages, sendEvent, 
         : { 'Authorization': 'Bearer ' + provider.key }),
       'anthropic-version': '2023-06-01'
     },
-    body: JSON.stringify(reqBody)
+    body: JSON.stringify(reqBody),
+    signal
   });
 
-  if (!r.ok) {
-    const errText = await r.text();
-    let errMsg;
-    try { errMsg = JSON.parse(errText).error?.message || errText; } catch (e) { errMsg = errText; }
-    console.error('[anthropic] error:', errText.slice(0, 500));
-    throw new Error(`API ${r.status}: ${errMsg}`);
-  }
+  if (!r.ok) throw new Error(safeUpstreamError(r));
 
   // 累积内容块
   const contentBlocks = [];
@@ -449,8 +467,12 @@ app.post('/api/chat', auth, async (req, res) => {
   const provider = config.providers.find(p => p.active);
   if (!provider?.key) return res.status(400).json({ error: 'No active provider configured' });
 
-  const { messages, system_prompt: reqSystemPrompt, thinking: enableThinking, cc_context } = req.body;
-  let inputMessages = messages || [];
+  const { messages, message, conversation_id, cc_sync, system_prompt: reqSystemPrompt, thinking: enableThinking, cc_context } = req.body;
+  // The bundled frontend sends `message`; generic API clients may send `messages`.
+  let inputMessages = Array.isArray(messages) ? messages : (message !== undefined ? [{ role: 'user', content: message }] : []);
+  if (!inputMessages.length) return res.status(400).json({ error: 'messages or message required' });
+  const latestUser = [...inputMessages].reverse().find(m => m.role === 'user');
+  let streamedText = '';
   let systemPrompt = reqSystemPrompt !== undefined ? reqSystemPrompt : (loadSystemPrompt() || config.system_prompt || '');
 
   // CC context injection (conversation-scoped, sent by frontend when cc-sync is on)
@@ -464,9 +486,12 @@ app.post('/api/chat', auth, async (req, res) => {
     }
   }
 
-  // 判断 provider 类型
-  const isAnthropic = provider.endpoint.replace(/\/+$/, '').endsWith('/messages')
-    || provider.endpoint.includes('anthropic.com');
+  // Explicit api_format wins over inference; /messages is the safe fallback.
+  const isAnthropic = providerUsesAnthropicAPI(provider);
+  const controller = new AbortController();
+  res.on('close', () => { if (!res.writableEnded) controller.abort(); });
+  req.on('aborted', () => controller.abort());
+  const request = createRequestSignal(controller.signal);
 
   // SSE 响应头
   res.setHeader('Content-Type', 'text/event-stream');
@@ -474,6 +499,7 @@ app.post('/api/chat', auth, async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
 
   const sendEvent = (type, data) => {
+    if (type === 'content' && typeof data.content === 'string') streamedText += data.content;
     try { res.write('data: ' + JSON.stringify({ type, ...data }) + '\n\n'); } catch (e) {}
   };
 
@@ -482,7 +508,7 @@ app.post('/api/chat', auth, async (req, res) => {
       // --- Anthropic 原生格式 ---
       const sanitized = sanitizeForAnthropic(inputMessages);
       const { content, toolUses } = await streamAnthropic(
-        provider, systemPrompt, sanitized, sendEvent, enableThinking
+        provider, systemPrompt, sanitized, sendEvent, enableThinking, request.signal
       );
 
       // 工具调用只透传事件, 不执行
@@ -495,17 +521,31 @@ app.post('/api/chat', auth, async (req, res) => {
       if (systemPrompt) allMsgs.push({ role: 'system', content: systemPrompt });
       allMsgs.push(...convertToOpenAI(inputMessages));
 
-      await streamOpenAI(provider, allMsgs, sendEvent);
+      await streamOpenAI(provider, allMsgs, sendEvent, enableThinking, request.signal);
     }
 
+    // Same API -> Hub inbox path as the running original: append a scoped log
+    // entry, push it to the inbox, and let Hub query the log if push fails.
+    if (conversation_id && streamedText.trim() && latestUser) {
+      const entry = { ts: new Date().toISOString(),
+        user: typeof latestUser.content === 'string' ? latestUser.content : JSON.stringify(latestUser.content),
+        assistant: streamedText, model: provider.model || '', via: 'api', conversation_id };
+      fs.appendFileSync(LOG_FILE, JSON.stringify(entry) + '\n', { mode: 0o600 });
+      if (cc_sync === true) forwardAPIContext(entry, process.env.BRIDGE_AUTH_TOKEN, true).catch(() => {});
+    }
     res.write('data: [DONE]\n\n');
     res.end();
 
   } catch (e) {
-    console.error('[chat] error:', e.message);
-    sendEvent('error', { message: e.message });
-    res.write('data: [DONE]\n\n');
-    res.end();
+    const message = request.signal.aborted ? 'Request cancelled or timed out' : e.message;
+    console.error('[chat] error:', message);
+    if (!res.destroyed) {
+      sendEvent('error', { message });
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
+  } finally {
+    request.cleanup();
   }
 });
 
@@ -517,10 +557,14 @@ app.post('/api/compress', auth, async (req, res) => {
   const { messages, existing_summary } = req.body;
   if (!messages?.length) return res.status(400).json({ error: 'messages required' });
 
-  const compressProvider = config.providers.find(p => p.name.toLowerCase().includes('deepseek') && p.key)
-    || config.providers.find(p => p.key && !p.endpoint.includes('anthropic'))
-    || config.providers.find(p => p.key);
-  if (!compressProvider) return res.status(400).json({ error: 'No compression provider. Add a secondary provider (e.g. DeepSeek) in settings.' });
+  // DeepSeek or another inexpensive OpenAI-compatible provider is preferred,
+  // but no third-party API key is shipped or hard-coded.
+  const available = (config.providers || []).filter(p => p.key && p.model && p.endpoint);
+  const compressProvider = available.find(p => p.compression === true)
+    || available.find(p => /deepseek/i.test(p.name || ''))
+    || available.find(p => !providerUsesAnthropicAPI(p))
+    || available[0];
+  if (!compressProvider) return res.status(400).json({ error: 'Configure a compression provider in Settings.' });
 
   const convText = messages.map(m => {
     const role = m.role === 'user' ? 'User' : 'Assistant';
@@ -528,28 +572,33 @@ app.post('/api/compress', auth, async (req, res) => {
     return role + ': ' + c.slice(0, 400);
   }).join('\n');
 
+  const summaryInstruction = 'Summarize the conversation concisely in third person. Preserve key topics, decisions, and unfinished items. Max 400 words. Output only the summary.';
+  const text = (existing_summary ? 'Previous summary:\n' + existing_summary + '\n\n---\n\nNew messages:\n' : '') + convText.slice(0, 8000);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 60000);
   try {
-    const endpoint = normalizeEndpoint(compressProvider.endpoint);
-    const r = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + compressProvider.key },
-      body: JSON.stringify({
-        model: compressProvider.model,
-        messages: [
-          { role: 'system', content: 'You are a conversation summarizer. Compress the following conversation into a concise third-person summary. Keep: key topics, emotional shifts, important agreements, unfinished items. Max 400 words. Output only the summary, no preamble.' },
-          { role: 'user', content: (existing_summary ? 'Previous summary:\n' + existing_summary + '\n\n---\n\nNew messages:\n' : '') + convText.slice(0, 8000) }
-        ],
-        max_tokens: 600,
-        temperature: 0.3
-      })
-    });
-    if (!r.ok) return res.status(502).json({ error: 'Compression provider returned ' + r.status });
+    const anthropic = providerUsesAnthropicAPI(compressProvider);
+    const endpoint = anthropic ? toAnthropicEndpoint(compressProvider.endpoint) : normalizeEndpoint(compressProvider.endpoint);
+    const headers = anthropic
+      ? { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01',
+          ...(endpoint.includes('anthropic.com') ? { 'x-api-key': compressProvider.key } : { Authorization: 'Bearer ' + compressProvider.key }) }
+      : { 'Content-Type': 'application/json', Authorization: 'Bearer ' + compressProvider.key };
+    const body = anthropic
+      ? { model: compressProvider.model, max_tokens: 600, system: summaryInstruction,
+          messages: [{ role: 'user', content: text }] }
+      : { model: compressProvider.model, messages: [{ role: 'system', content: summaryInstruction }, { role: 'user', content: text }], max_tokens: 600 };
+    const r = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body), signal: controller.signal });
+    if (!r.ok) return res.status(502).json({ error: safeUpstreamError(r) });
     const data = await r.json();
-    const summary = (data.choices?.[0]?.message?.content || '').trim();
-    if (!summary || summary.length < 10) return res.status(500).json({ error: 'Summary too short' });
+    const summary = (anthropic
+      ? (data.content || []).filter(block => block.type === 'text').map(block => block.text || '').join('')
+      : (data.choices?.[0]?.message?.content || '')).trim();
+    if (!summary) return res.status(502).json({ error: 'Compression returned an empty summary' });
     res.json({ summary, provider: compressProvider.name, model: compressProvider.model });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(502).json({ error: e.name === 'AbortError' ? 'Compression timed out' : 'Compression request failed' });
+  } finally {
+    clearTimeout(timer);
   }
 });
 
@@ -607,6 +656,7 @@ app.get('/api/conversations', auth, (req, res) => {
 });
 
 app.get('/api/conversations/:id', auth, (req, res) => {
+  if(!/^[\w-]{1,200}$/.test(req.params.id)) return res.status(400).json({error:'invalid conversation id'});
   const fp = path.join(CONV_DIR, req.params.id + '.json');
   if (!fs.existsSync(fp)) return res.status(404).json({ error: 'not found' });
   try { res.json(JSON.parse(fs.readFileSync(fp, 'utf8'))); }
@@ -614,14 +664,28 @@ app.get('/api/conversations/:id', auth, (req, res) => {
 });
 
 app.put('/api/conversations/:id', auth, (req, res) => {
+  if(!/^[\w-]{1,200}$/.test(req.params.id)) return res.status(400).json({error:'invalid conversation id'});
   const conv = req.body;
-  if (!conv || !conv.id) return res.status(400).json({ error: 'invalid' });
+  if (!conv || conv.id !== req.params.id || !Array.isArray(conv.m))
+    return res.status(400).json({ error: 'invalid conversation' });
   const fp = path.join(CONV_DIR, conv.id + '.json');
-  try { fs.writeFileSync(fp, JSON.stringify(conv)); res.json({ ok: true }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    if(fs.existsSync(fp)) {
+      const prev=JSON.parse(fs.readFileSync(fp,'utf8'));
+      const knownIds=new Set(conv.m.filter(m=>m.bridge_id).map(m=>m.bridge_id));
+      for(const m of (prev.m || [])) {
+        if(m.source==='cc' && m.bridge_id && !knownIds.has(m.bridge_id)) {
+          conv.m.push(m); knownIds.add(m.bridge_id);
+        }
+      }
+    }
+    const tmp=fp+'.tmp';fs.writeFileSync(tmp,JSON.stringify(conv),{mode:0o600});fs.renameSync(tmp,fp);
+    res.json({ok:true});
+  } catch(e) {res.status(500).json({error:'failed to save conversation'});}
 });
 
 app.delete('/api/conversations/:id', auth, (req, res) => {
+  if(!/^[\w-]{1,200}$/.test(req.params.id)) return res.status(400).json({error:'invalid conversation id'});
   const fp = path.join(CONV_DIR, req.params.id + '.json');
   try { if (fs.existsSync(fp)) fs.unlinkSync(fp); res.json({ ok: true }); }
   catch (e) { res.status(500).json({ error: e.message }); }
@@ -670,79 +734,76 @@ app.delete('/api/stickers/:id', auth, (req, res) => {
 });
 
 // ============================================================
-// CC Bridge — Claude Code 双模式桥接
+// Original Hub adapter (Bridge runs as an independent local service).
+// It retains the proven tmux/JSONL verification and API catch-up machinery.
 // ============================================================
-let pendingForBrowser = [];
-let pendingForCC = [];
-let lastCCPoll = 0;
-
-/** 浏览器轮询: 获取 CC 发来的消息 */
-app.get('/cc-poll', auth, (req, res) => {
-  const msgs = pendingForBrowser.splice(0);
-  const ccAlive = (Date.now() - lastCCPoll) < 30000;
-  res.json({
-    ok: true,
-    cc_alive: ccAlive,
-    messages: msgs.map(m => ({ role: m.role, content: m.content, ts: m.ts })),
-    t: Date.now()
+const BRIDGE_HTTP_PORT = Number(process.env.BRIDGE_CLIENT_PORT || 3462);
+function hubProxy(req, res, endpoint, method, body) {
+  const http = require('node:http');
+  const token = process.env.BRIDGE_AUTH_TOKEN;
+  if (!token) return res.status(503).json({ error: 'BRIDGE_AUTH_TOKEN is not configured' });
+  const payload = body ? JSON.stringify(body) : null;
+  const upstream = http.request({host:'127.0.0.1', port:BRIDGE_HTTP_PORT, path:endpoint,
+    method, timeout:7000, headers:{'x-auth-token': token,
+      ...(payload ? {'Content-Type':'application/json','Content-Length':Buffer.byteLength(payload)} : {})}}, reply => {
+      res.status(reply.statusCode || 502);
+      res.setHeader('Content-Type','application/json');
+      reply.pipe(res);
+    });
+  upstream.on('timeout',()=>upstream.destroy());
+  upstream.on('error',()=>{ if(!res.headersSent) res.status(502).json({error:'CC Hub unavailable'}); });
+  upstream.end(payload || undefined);
+}
+app.get('/cc-poll', auth, (req,res) => {
+  const since = Math.max(0,Number(req.query.since)||0);
+  hubProxy(req,res,'/api/poll?since='+encodeURIComponent(String(since)), 'GET');
+});
+app.post('/cc-msg', auth, (req,res) => {
+  const { content, image, images, conversation_id, cc_sync } = req.body;
+  const hasImage = image && typeof image.data === 'string' && /^image\//.test(image.type || '');
+  const hasImages = Array.isArray(images) && images.length > 0 && images.length <= 5 &&
+    images.every(i => i && typeof i.data === 'string' && /^image\//.test(i.type || ''));
+  if ((typeof content !== 'string' || !content.trim()) && !hasImage && !hasImages)
+    return res.status(400).json({error:'content or image required'});
+  if(typeof conversation_id !== 'string' || !/^[\w-]{1,200}$/.test(conversation_id))
+    return res.status(400).json({error:'valid conversation_id required'});
+  hubProxy(req,res,'/api/message','POST',{
+    content:typeof content === 'string' ? content : '', conversation_id,cc_sync:cc_sync===true,
+    ...(hasImage ? {image} : {}), ...(hasImages ? {images} : {})
   });
 });
-
-/** CC 轮询: 获取用户发来的消息 */
-app.get('/cc-bridge/pending', (req, res) => {
-  lastCCPoll = Date.now();
-  const msgs = pendingForCC.splice(0);
-  res.json({ messages: msgs });
+function readChatLogs(cid,limit) {
+  try {
+    const rows = fs.readFileSync(LOG_FILE,'utf8').trim().split('\n');
+    return rows.slice(-1000).map(line=>{try{return JSON.parse(line)}catch{return null}})
+      .filter(m=>m && m.conversation_id===cid).slice(-limit);
+  } catch(e) { return []; }
+}
+app.get('/api/chat-log/recent', auth, (req,res)=>{
+  const cid=req.query.conversation_id;
+  if(typeof cid!=='string' || !/^[\w-]{1,200}$/.test(cid))
+    return res.status(400).json({error:'valid conversation_id required'});
+  res.json(readChatLogs(cid,Math.min(50,Math.max(1,Number(req.query.n)||10))));
 });
-
-/** CC 回复: 将 CC 的回复推给浏览器 */
-app.post('/cc-bridge/reply', (req, res) => {
-  const { content } = req.body;
-  if (!content) return res.status(400).json({ error: 'content required' });
-
-  const msg = {
-    id: 'm_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
-    role: 'assistant',
-    content,
-    ts: Date.now()
-  };
-
-  pendingForBrowser.push(msg);
-  res.json({ ok: true });
-});
-
-/** 浏览器发送 CC 模式消息 */
-app.post('/cc-msg', auth, (req, res) => {
-  const { content, conversation_id } = req.body;
-  if (!content) return res.status(400).json({ error: 'content required' });
-
-  const msg = {
-    id: 'm_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
-    role: 'user',
-    content,
-    ts: Date.now()
-  };
-
-  // 存入待 CC 读取队列
-  pendingForCC.push(msg);
-
-  // 如果指定了会话, 同步保存到会话文件
-  if (conversation_id) {
-    try {
-      const fp = path.join(CONV_DIR, conversation_id + '.json');
-      if (fs.existsSync(fp)) {
-        const conv = JSON.parse(fs.readFileSync(fp, 'utf8'));
-        if (!conv.m) conv.m = [];
-        conv.m.push({ role: 'user', content, ts: Date.now() });
-        conv.u = Date.now();
-        fs.writeFileSync(fp, JSON.stringify(conv));
-      }
-    } catch (e) {
-      console.error('[cc-msg] 会话保存失败:', e.message);
+// Original Hub's durable CC -> Classic writeback endpoint.
+app.post('/api/stream/append', auth, (req,res)=>{
+  const cid=req.body.cid, m=req.body.m;
+  if(typeof cid!=='string'|| !/^[\w-]{1,200}$/.test(cid) || !m || m.source!=='cc'
+     || m.role!=='assistant' || typeof m.content!=='string' || typeof m.bridge_id!=='string')
+    return res.status(400).json({error:'invalid CC stream entry'});
+  const fp=path.join(CONV_DIR,cid+'.json');
+  try {
+    if(!fs.existsSync(fp))return res.status(404).json({error:'conversation not found'});
+    const conv=JSON.parse(fs.readFileSync(fp,'utf8'));
+    if(!Array.isArray(conv.m))conv.m=[];
+    if(!conv.m.some(old=>old.bridge_id===m.bridge_id)) {
+      conv.m.push({role:'assistant',source:'cc',content:m.content,bridge_id:m.bridge_id,
+        ts:Number(m.ts)||Date.now(),...(typeof m.thinking==='string'?{thinking:m.thinking}:{})});
+      conv.u=Date.now();
+      const temp=fp+'.tmp';fs.writeFileSync(temp,JSON.stringify(conv),{mode:0o600});fs.renameSync(temp,fp);
     }
-  }
-
-  res.json({ ok: true, message: msg });
+    res.json({ok:true});
+  } catch(e) {res.status(500).json({error:'failed to persist reply'});}
 });
 
 // ============================================================
@@ -752,7 +813,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     ts: new Date().toISOString(),
-    cc_alive: (Date.now() - lastCCPoll) < 30000
+    cc_alive: null // CC state is maintained by the separate Hub
   });
 });
 

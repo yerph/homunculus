@@ -1,0 +1,14 @@
+{
+  "name": "homunculus-cc-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sanitized original CC Hub and MCP bridge",
+  "scripts": {
+    "start": "node hub.js",
+    "mcp": "node bridge.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  }
+}

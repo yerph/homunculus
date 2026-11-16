@@ -7,7 +7,7 @@
 **CC 模式**：把 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 从命令行工具变成一个住在你所有设备上的 companion，能主动找你聊天。
 **API 模式**：直接调用 Anthropic / OpenAI / OpenRouter 等 AI API，不依赖 Claude Code 也能用。
 
-两种模式共享同一套前端，一键切换。
+两种模式可以在网页前端一键切换，并可通过独立的 **CC ↔ API context sync** 开关选择是否衔接当前聊天窗口的上下文。
 
 - **网页聊天** —— 完整的聊天界面，多对话管理、表情包、代码高亮，任何浏览器都能打开
 - **Telegram 聊天** —— 随时随地，用手机回消息（CC 模式）
@@ -33,37 +33,53 @@
 
 下面这张图展示了所有模块怎么连在一起。不用一次看懂，后面每个模块都会单独解释。
 
-```
-                        ┌──────────────────┐
-                        │     前端入口      │
-                        │  浏览器 / 手机组件 │
-                        └────────┬─────────┘
-                                 │
-                        ┌────────▼─────────┐
-                        │   chat-server    │
-                        │  (双模式路由)     │
-                        └───┬─────────┬────┘
-                  CC 模式 │           │ API 模式
-               ┌──────────▼──┐  ┌────▼───────────┐
-               │ Claude Code │  │    AI API       │
-               │  (MCP 会话)  │  │ Anthropic/OpenAI│
-               └──────┬──────┘  └────────────────┘
-                      │              ▲
-        ┌─────────────┼──────┐       │ 上下文衔接
-        │             │      │       │ (cc-sync)
-   ┌────▼────┐ ┌─────▼────┐ │       │
-   │Telegram │ │  Bark    │ └───────┘
-   │ (机器人) │ │(推送通知) │
-   └─────────┘ └──────────┘
-        ▲
-        │
-   ┌────┴──────┐
-   │  定时唤醒  │
-   │(keepalive)│
-   └───────────┘
+```mermaid
+flowchart TB
+    U["使用者：浏览器 / PWA"]
+    W["可选：手机组件"]
+    N["HTTPS / Nginx 反向代理"]
+    CK["可选：外部 Cookie 前置鉴权"]
+    S["chat-server：网页、会话管理与 API 路由"]
+    A["API 模式：选择 Provider"]
+    MODEL["模型服务商：Anthropic / OpenAI 兼容 API"]
+    C["上下文组装：历史摘要 + 最近消息"]
+    COMP["压缩接口 /api/compress"]
+    SUM["压缩模型：配置项优先，其次 DeepSeek 等"]
+    DATA["chat-server/data：会话、API 日志及摘要"]
+    H["CC Hub：消息转发、同步与投递确认"]
+    INBOX["API 同步收件箱：按窗口去重、待补前情"]
+    TMUX["tmux：注入消息 + 检查终端状态"]
+    CC["既有 Claude Code 会话"]
+    JSONL["CC JSONL：投递验证、消息监听"]
+    MCP["Web Channel MCP：CC 回复网页"]
+    EXTRA["可选：Telegram / Bark / Keepalive"]
+
+    U --> N
+    W -. "独立入口，按需部署" .-> N
+    N --> S
+    N -. "可选登录校验" .-> CK
+    CK -. "校验通过后放行" .-> S
+    S -->|"API 模式"| A
+    A --> C --> MODEL
+    MODEL -->|"流式回复"| S
+    S <-->|"保存 / 读取"| DATA
+    S -->|"满 24 条未压缩消息后"| COMP
+    COMP --> SUM
+    SUM -->|"返回摘要，保留最近 4 条"| DATA
+    DATA -->|"后续 API 请求使用摘要"| C
+    S -->|"CC 模式"| H
+    H --> TMUX --> CC
+    CC --> JSONL --> H
+    CC -->|"调用 reply 工具"| MCP --> H
+    H -->|"回复与状态"| S
+    S -. "启用 CC Sync：API 回合保存后推送" .-> INBOX
+    INBOX -. "切回 CC 发消息时补充前情" .-> H
+    EXTRA -. "通过各自配置的渠道交互" .-> CC
 ```
 
-**核心思路：** 所有前端都支持 **CC 模式**和 **API 模式**双模切换。CC 模式下，消息通过 MCP 进入 Claude Code 的上下文窗口；API 模式下，消息直接调用 AI API。两种模式之间支持上下文衔接（cc-sync），切换时对话接得上。Keepalive 定时唤醒 CC，让它可以主动找你聊天。
+图中**实线**表示主要请求或数据流，**虚线**表示可选能力或按需同步。这里的 Cookie 鉴权是**可接入的前置部署层**：当前公开版 `chat-server` 仍以 `CHAT_PASSWORD` / `x-auth-token` 验证 API 请求，示例并未内置 Cookie 签发服务。手机组件、Telegram、Bark、Keepalive 各有独立的配置与接线，不表示它们都通过同一个 chat-server 接口工作。
+
+**核心思路：** 网页聊天支持 **CC / API 双模式切换**。CC 模式由独立运行的 CC Hub 把消息交给已有 Claude Code 会话，并通过 MCP 取得回复；API 模式直接调用服务商接口。开启 CC Sync 后，切回 CC 并正常发送下一条消息时，Hub 会自动带上当前窗口尚未同步的 API 前情，**无需手动导入，也不会仅因点击切换按钮就唤醒 CC**。Keepalive 是单独配置的可选功能。
 
 ---
 
@@ -71,7 +87,8 @@
 
 | 模块 | 说明 |
 |------|------|
-| **chat-server** | 功能完整的网页聊天前端 —— 多对话管理 + 文件夹整理、表情包面板、代码语法高亮、CC 与 API 双模式切换、Markdown 渲染、对话搜索与日历、消息编辑与重新生成、头像自定义、深色 / 浅色主题 |
+| **chat-server** | 网页聊天、会话管理、CC/API 双模式选择、Provider 配置、流式回复与上下文压缩 |
+| **cc-bridge** | CC Hub、JSONL 会话监听、API 同步收件箱和 Web Channel MCP 回复桥；复用既有 CC 会话 |
 | **phone-widget** | 手机造型的小组件，iMessage 风格聊天气泡，支持 CC 与 API 双模式，适合嵌入网页或作为移动端入口 |
 | **nginx 配置** | 反向代理，把所有服务统一到一个域名下，处理 HTTPS |
 | **keepalive** | 定时唤醒脚本，让 Claude Code 可以主动发消息 |
@@ -79,29 +96,67 @@
 
 ---
 
+## CC ↔ API 上下文衔接（可选）
+
+网页设置中的 **CC ↔ API context sync** 是独立开关，默认需要自行启用。API 回合会保存在当前窗口的日志中，启用同步后尝试将其送入 Hub 收件箱，但**不会因为 API 聊天就额外唤醒 CC**。切回 CC 正常发送消息时，Hub 才自动把当前窗口尚未交付的 API 前情拼入该消息；CC 回复可用于后续 API 上下文。代码采用经过脱敏整理的 CC Hub、JSONL Tail 与 Web Channel MCP Bridge，**不需要额外的轮询 Worker**。Hub 使用独立的 `BRIDGE_AUTH_TOKEN`，监听地址仅限本机。
+
+部署和投递确认、重试、脱敏边界详见 [CC/API 同步配置](docs/cc-api-continuity.md)。公开版不会为你自动创建、启动或切换 Claude Code 会话；需要你自行配置一个现有的 CC/tmux 会话。
+
+## API 上下文压缩：从触发到下一次对话
+
+这里的「压缩」是**将较早的聊天内容概括成可继续携带的文字摘要**，不是压缩磁盘文件，也不是 Claude Code 自己的 compaction。它由网页与 `chat-server` 配合完成；摘要会影响之后 API 模式发送给模型的上下文，原始聊天记录依然可以保留用于浏览。
+
+```mermaid
+flowchart LR
+    A["API 回复成功并保存"] --> B{"当前窗口未压缩消息 ≥ 24 条？"}
+    B -->|"否"| Z["正常保存，不触发压缩"]
+    B -->|"是"| C["保留最近 4 条；取更早的消息"]
+    C --> D["POST /api/compress：旧消息 + 既有摘要"]
+    D --> E["选择压缩 Provider，生成摘要"]
+    E --> F{"返回有效摘要？"}
+    F -->|"失败或超时"| G["维持原状态；不标记已压缩"]
+    F -->|"成功"| H["追加到 rolling_summary，标记旧消息 _compressed"]
+    H --> I["下一轮 API：摘要 + 尚未压缩的消息"]
+```
+
+**具体规则与实现细节：**
+
+1. **触发时机**：一轮 API 回复成功、保存到会话后，浏览器调用 `maybeCompress()`。它统计当前会话中没有 `_compressed` 标记的消息；达到 **24 条**时才请求压缩。这个阈值是**消息条数**，不是 Token 数量，也不是模型窗口使用率。
+2. **保留范围**：最近 **4 条未压缩消息**保留原文，之前的消息作为本轮压缩输入。压缩完成后，较早的消息只标记为 `_compressed: true`，不会因为压缩而直接从聊天界面删除。
+3. **模型选择顺序**：优先使用 Provider 配置中 `compression: true` 的模型；否则依次选择**名称包含 DeepSeek** 的可用 Provider、其他 OpenAI 兼容 Provider、最后任意已配置的 Provider。这里「可用」指配置了 Key、模型 ID 和 Endpoint；不自带免费额度或私人的 Key。压缩也会产生服务商 API 调用与费用。
+4. **送给压缩模型的内容**：每条较早消息被整理为 `User:` 或 `Assistant:` 文本，单条最多截取 **400 个字符**，合并文本最多 **8,000 个字符**；若已有摘要，也一起作为「Previous summary」传入。服务端要求模型尽量保留话题、决定与未完成事项，摘要目标不超过 **400 英文单词**，请求输出上限为 **600 tokens**，超时时间 **60 秒**。这些是代码中的参数与提示，并不保证模型严格遵守摘要字数。
+5. **保存和复用**：服务端返回 `summary` 后，浏览器会把新摘要**追加**进当前窗口的 `rolling_summary`，而不是直接覆盖；旧消息标记为已压缩。下一次 API 对话通过 `buildCtx()` 将摘要放在前面，再接上尚未压缩的消息（随后仍受 `Max history messages` 的数量截断设置影响）。
+6. **失败处理**：接口返回错误、超时或空摘要时，该轮不会把旧消息标记为已压缩；之后有新的 API 回复时仍可能再次尝试。压缩不会自动改写 Claude Code 真实 JSONL 或 CC 的长期记忆。
+
+**两个容易混淆的开关**：`CC ↔ API context sync` 负责**模式之间传递前情**；上下文压缩负责**将较早的消息总结给后续 API**。两者不是同一个动作。开启 CC Sync 时，CC 回合也可能存在于当前窗口的消息集合，压缩入口按照 `_compressed` 标记统计，**并非仅统计 API 消息**；而 API 主请求又会按 CC 消息来源单独组装前情，不能把这两套机制理解为完全一样的筛选过程。
+
+**当前实现的边界**：`rolling_summary` 采用追加式积累，摘要本身可能越来越长；它不会保证 Token 必然低于某个阈值，也不能完全避免信息遗漏或重复概括。需要进一步的摘要合并、Token 预算或摘要去重时，应作为独立改进处理，而不是当作现有功能已经支持。
+
+更详细的接口、Provider 格式、模型参数与模拟测试见 [API 模式说明](docs/api-mode.md)。
+
+---
+
 ## 前提条件
 
 开始之前，请确认你有以下东西。如果某个词你完全没听过，下面有解释。
 
-### 必需
+### 基础要求
 
-| 你需要的 | 它是什么 / 为什么需要 |
-|---------|---------------------|
-| **一台 VPS** | VPS 是"虚拟专用服务器"（Virtual Private Server），简单理解就是你在云端租的一台电脑，24 小时开机，有独立的公网 IP。你的所有服务（聊天网页、Claude Code 等）都跑在这上面。推荐 Ubuntu 22.04 或更新的版本。常见的 VPS 提供商有 Vultr、DigitalOcean、Hetzner、搬瓦工等，最便宜的方案每月大约 $5-10。 |
-| **Claude Code 订阅** | Claude Code 是 Anthropic 的命令行工具，需要 Pro 或 Max 订阅才能使用。Max 订阅额度更高，如果你打算频繁聊天建议选 Max。 |
-| **Node.js 18+** | Node.js 是运行 JavaScript 的环境，chat-server 和 phone-widget 都需要它。大部分 VPS 不预装，需要自己安装。 |
-| **nginx** | nginx（读作 "engine-x"）是一个反向代理服务器。它的作用是：你的浏览器访问 `https://你的域名.com`，nginx 把请求转发到后面正确的服务。没有它，你没法用域名 + HTTPS 访问你的服务。 |
-| **一个域名** | 用来访问你的网页聊天和手机组件。也是 HTTPS 证书所必需的。可以从 Namecheap、Cloudflare 等地方买一个。 |
-| **Telegram 机器人 Token** | 从 Telegram 的 [@BotFather](https://t.me/botfather) 创建机器人后获得。这是连接 Telegram 聊天的钥匙。 |
+| 条件 | 说明 |
+|---|---|
+| **Node.js 20+** | 运行 `chat-server`；CC 模式额外运行 `cc-bridge`。 |
+| **可以访问的模型服务商 API** | 只使用 API 模式时，需要自行配置 Provider 的 Endpoint、Model、Key；无需 Claude Code。 |
+| **Claude Code + tmux** | 只有启用 CC 模式才需要。准备一个已登录、正在运行的 CC 会话；Hub 会连接现有会话，不会自动替你创建。 |
 
-### 可选
+### 按部署需求选择
 
-| 你可能还想要的 | 说明 |
-|-------------|------|
-| **Bark App（iOS）** | 一个免费的 iOS 推送通知应用。装了它之后，Claude Code 可以往你的 iPhone 发推送。不用 iOS 的可以跳过。 |
-| **SSL 证书** | HTTPS 需要证书。推荐用免费的 [Let's Encrypt](https://letsencrypt.org/)，配合 `certbot` 工具自动申请和续期。 |
-
----
+| 可选组件 | 用途 |
+|---|---|
+| **VPS / 家庭服务器 / 本机电脑** | 运行服务的机器；只有需要远程访问时才必须配置合适的网络入口。 |
+| **域名、Nginx 与 HTTPS** | 需要通过互联网访问时建议使用；内网本机测试可以先不配置。 |
+| **Telegram 插件 / Bot Token** | 使用 Telegram 渠道时才需要。 |
+| **Bark App（iOS）** | 可选通知渠道。 |
+| **phone-widget、Keepalive** | 按需要部署的额外界面与定时唤醒能力。 |
 
 ## 安装教程（一步一步来）
 
@@ -116,11 +171,11 @@ sudo apt update
 # 安装 nginx（反向代理）和 certbot（自动申请 SSL 证书）
 sudo apt install -y nginx certbot python3-certbot-nginx
 
-# 安装 Node.js 18+
+# 安装 Node.js 20+
 # 如果你的系统默认 Node 版本太旧，可以用 nvm 管理：
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 source ~/.bashrc
-nvm install 18
+nvm install 20
 
 # 安装 tmux（让 Claude Code 在后台持续运行）
 sudo apt install -y tmux
@@ -140,14 +195,15 @@ cd homunculus
 ### 第 3 步：安装依赖
 
 ```bash
-# 给 chat-server 安装依赖
-cd chat-server && npm install && cd ..
+# 在仓库根目录执行
+npm --prefix chat-server ci
+npm --prefix cc-bridge ci
 
-# 给 phone-widget 安装依赖
-cd phone-widget && npm install && cd ..
+# 需要手机小组件时再安装（可选）
+npm --prefix phone-widget ci
 ```
 
-**为什么要 `npm install`？** 每个 Node.js 项目都会用到一些第三方库（比如 web 服务器框架）。`npm install` 会读取 `package.json` 文件，自动下载所有需要的库到本地。
+**为什么用 `npm ci`？** 它会按仓库中的锁文件安装对应依赖，适合首次部署与复现环境。
 
 ### 第 4 步：配置环境变量
 
@@ -159,25 +215,25 @@ cp .env.example .env
 然后编辑 `.env` 文件（用 `nano .env` 或你喜欢的编辑器）：
 
 ```env
-# 聊天服务的密码（访问网页聊天时需要输入，防止别人乱进来）
-CHAT_PASSWORD=在这里设置一个密码
+# 网页 API 的访问令牌，使用随机且足够长的值
+CHAT_PASSWORD=replace-with-a-long-random-password
+CHAT_PORT=4500
 
-# 你的域名
-DOMAIN=你的域名.com
+# CC Hub 独立鉴权令牌（不要与 CHAT_PASSWORD 相同）
+BRIDGE_AUTH_TOKEN=replace-with-a-different-random-token
+BRIDGE_CLIENT_PORT=3462
+BRIDGE_INTERNAL_PORT=3463
+BRIDGE_TMUX=cc
+BRIDGE_TMUX_USER=your-linux-username
+BRIDGE_CC_SESSION_DIR=/absolute/path/to/your/claude/project/transcripts
 
-# Bark 推送（如果你用 iOS，可选）
-BARK_KEY_1=你的bark密钥
-BARK_ICON_URL=https://你的域名.com/你的图标.png
-BARK_GROUP=companion
-
-# 名称和头像字母（显示在界面上的）
-COMPANION_NAME=你的CC名字
-COMPANION_AVATAR=C
+# 部署域名（需要时设置）
+DOMAIN=example.com
 ```
 
-各服务的端口号也在 `.env` 中配置。具体有哪些端口可以看 `.env.example` 里的注释。
+`BRIDGE_TMUX` 必须与实际运行的 tmux Session 名称一致；`BRIDGE_TMUX_USER` 是该 tmux 会话所属的系统用户；`BRIDGE_CC_SESSION_DIR` 要填写 Claude Code 对应项目的 JSONL 会话目录。Hub 通过 `sudo -u` 操作该用户的 tmux，部署账户必须有**仅限必要操作**的对应权限，不建议给公开服务广泛的免密 sudo 权限。可选功能和其他端口见 `.env.example`。
 
-**为什么用 .env 文件？** 密码、密钥这类敏感信息不应该直接写在代码里。`.env` 文件只存在于你的 VPS 上，不会被上传到 GitHub。
+**为什么用 `.env` 文件？** 密钥不应该直接写在代码中。`.env` 已由 `.gitignore` 排除，但仍要自己保管，不要手动提交、截图分享或放入公开备份。
 
 ### 第 5 步：设置 CC Profile
 
@@ -197,7 +253,7 @@ Claude Code 在每次启动时会读取这个文件，并按照里面的描述�
 
 把模板改成你想要的样子就好。这是最需要花心思的部分，也是让每个人的 CC 都独一无二的关键。
 
-### 第 6 步：配置 nginx 反向代理
+### 第 6 步：配置 nginx 反向代理（需要公网访问时）
 
 ```bash
 # 先编辑配置文件里的域名和路径
@@ -216,7 +272,7 @@ sudo systemctl reload nginx
 
 **反向代理在做什么？** 你的 VPS 上跑着好几个服务（chat-server、phone-widget），各自监听不同的端口。nginx 统一接收来自外部的请求（通过你的域名），然后根据 URL 路径分发给对应的服务。比如访问 `/` 走 chat-server，访问 `/phone/` 走 phone-widget。
 
-如果你还没有 SSL 证书，用 certbot 自动申请：
+注意：示例 Nginx 配置含有 HTTPS 证书文件路径，**必须先准备有效证书并填写正确路径**，否则 `nginx -t` 会失败。首次申请证书时可先使用适合你服务器的 HTTP 验证配置，再使用 Certbot 签发；证书就绪后再启用 HTTPS 配置。以下是 Certbot 的一种操作方式：
 
 ```bash
 sudo certbot --nginx -d 你的域名.com
@@ -242,29 +298,29 @@ claude /telegram:access
 
 详细步骤参见 [Telegram 配置指南](docs/setup-telegram.md)。
 
-### 第 8 步：启动所有服务
+### 第 8 步：启动 CC 与网页服务
 
-推荐用 pm2 管理 Node 进程 —— 服务崩溃时它会自动重启，不需要你手动拉起来：
+先启动你自己的 Claude Code tmux 会话，再分别运行 Hub 与 chat-server。以下是**前台验证命令**，不要在同一终端一口气执行全部；确认后可使用 PM2 或 systemd 配置开机自启。
 
 ```bash
-# 安装 pm2（全局）
-npm install -g pm2
-
-# 启动 chat-server
-cd chat-server && pm2 start server.js --name chat-server
-
-# 启动 phone-widget
-cd phone-widget && pm2 start server.js --name phone-widget
-
-# 设置开机自启（VPS 重启后服务自动恢复）
-pm2 save
-pm2 startup
-
-# 用 tmux 启动 Claude Code（这样关掉终端它也不会退出）
+# 先在 tmux 里启动并登录 Claude Code（示例名称 cc）
 tmux new-session -d -s cc 'claude'
+
+# 确认会话存在，名称与 BRIDGE_TMUX 一致
+tmux ls
+
+# 在仓库根目录启动两个必要的 Node 进程（Node.js 20+ 的 --env-file）
+# 先分别在前台验证成功；生产环境可用 PM2/systemd 管理
+node --env-file=.env cc-bridge/hub.js
+# 另一个终端：
+node --env-file=.env chat-server/server.js
+# 手机小组件按需单独启动：
+node --env-file=.env phone-widget/server.js
 ```
 
-**如何确认服务跑起来了？** 打开浏览器，访问 `https://你的域名.com`，应该能看到登录页面。输入你在 `.env` 里设置的密码，进入聊天界面。
+**如何确认服务跑起来了？** 先访问网页确认 chat-server 可用，再检查 Hub 的本机 `/health` 和 MCP 连接状态。**认证方式取决于部署层：**本仓库当前的 `chat-server` 使用 `CHAT_PASSWORD` + `x-auth-token` 验证请求；如果你已有通过 Nginx/Cookie 进行前置鉴权的入口，可以在部署时继续接入。请注意，示例代码**没有自动实现 Cookie 登录流程**，不能把只设置了 `CHAT_PASSWORD` 误认为已经配置好 Cookie 会话。
+
+还需要在你自己的 Claude Code MCP 配置中注册 `cc-bridge/bridge.js`，它通过本机 `BRIDGE_INTERNAL_PORT` 与 Hub 连接，提供 `web-channel` 的 `reply` 等工具；仅仅启动 Hub 不会让 CC 自动学会回复网页。具体连接方式与检查步骤见 [CC/API 同步配置](docs/cc-api-continuity.md)。
 
 要重新连上 Claude Code 的 tmux 会话（比如看看它在做什么）：
 
@@ -350,21 +406,21 @@ PWA（Progressive Web App）让你的网页聊天界面可以像一个真正的 
 }
 ```
 
-### CC 模式 与 API 模式
+### CC 模式与 API 模式
 
 chat-server 支持两种模式，可以在设置面板里一键切换：
 
-- **CC 模式**（默认）：消息通过 MCP web-channel 插件发送给 Claude Code 会话，CC 用 CLAUDE.md 中的身份回复。适合日常陪伴。
+- **CC 模式**：消息交给 CC Hub，通过 tmux 送入现有 Claude Code 会话，回复通过 Web Channel MCP 回到网页。适合在现有 CC 会话中持续聊天。
 - **API 模式**：消息直接调用 AI API（Anthropic、OpenAI、OpenRouter 等），适合 CC 不在线时、或者你想用不同的模型聊天。可以选择是否衔接 CC 模式的对话上下文（见下方）。
 
 在设置面板的 Providers 里添加你的 API 密钥和模型，保存后就可以切换到 API 模式使用。
 
 #### 上下文衔接（可选）
 
-切换模式时可以衔接对话上下文，不用从头聊起：
+启用同步开关后，在同一聊天窗口中切换模式可以衔接前情：
 
 - **CC → API**：在设置面板里开启「CC Sync」开关，API 模式会自动拉取当前窗口内的 CC 聊天记录（较早的压缩为摘要，最近几轮保留原文）。不开这个开关，API 模式就是独立的。
-- **API → CC**：切回 CC 模式时，系统自动检测模式切换，把最近的 API 对话带给 CC，让它接上之前的话题。
+- **API → CC**：切回 CC 后照常发送下一条消息，Hub 自动附带当前窗口尚未同步的 API 前情。只切换按钮、不发送消息时不会额外调用 CC。
 
 衔接按对话窗口隔离 —— 只拉当前窗口内的消息，新窗口是干净的开始。
 
@@ -382,11 +438,16 @@ chat-server 支持两种模式，可以在设置面板里一键切换：
 
 ```
 homunculus/
-├── chat-server/           # 网页聊天前端 + API（CC + API 双模式）
-│   ├── server.js          # Express 服务 + 流式 API 代理 + CC 桥接
+├── chat-server/           # 网页聊天 + API 模式
+│   ├── server.js          # Express 服务 + API 流式代理 + CC Hub 代理
 │   ├── public/
 │   │   └── index.html     # 完整聊天 UI（侧边栏、表情包、设置面板等）
 │   └── package.json
+├── cc-bridge/             # CC Hub + JSONL Tail + API 同步收件箱 + MCP Bridge
+│   ├── hub.js
+│   ├── cc-tail.js
+│   ├── api-sync-inbox.js
+│   └── bridge.js
 ├── phone-widget/          # 手机组件前端 + API
 │   ├── server.js
 │   ├── public/
@@ -400,6 +461,8 @@ homunculus/
 │   └── README.md
 ├── docs/                  # 各模块的配置指南
 │   ├── architecture.md
+│   ├── api-mode.md
+│   ├── cc-api-continuity.md
 │   ├── setup-telegram.md
 │   ├── setup-bark.md
 │   ├── setup-keepalive.md
@@ -416,11 +479,11 @@ homunculus/
 
 ### 安全
 
-chat-server 使用密码登录 + session 机制保护。首次访问需要输入你在 `.env` 里设置的 `CHAT_PASSWORD`，验证通过后会创建一个 session，后续请求不需要重复输入。建议设置一个强密码（不要用 `123456`），并且始终通过 HTTPS 访问。
+本仓库中 `chat-server` 的 API 鉴权使用 `CHAT_PASSWORD` 与 `x-auth-token`。**若你的实际部署采用 Nginx 前置 Cookie 鉴权，Cookie 由网关负责校验，和应用内部请求令牌是两个层次，不应混淆。** 示例 Nginx 配置没有包含完整的 Cookie 登录/签发逻辑，使用者需要自行接入可信的鉴权服务。公开部署请使用 HTTPS、强随机凭据，并确保 Hub 端口只允许本机访问。
 
 ### 对话记录
 
-对话记录保存在 chat-server 的 JSON 文件中（`chat-server/conversations/` 目录），服务重启后聊天记录不会丢失。
+聊天记录主要保存在 `chat-server/data/conversations/`，API 历史与 CC Hub 的运行状态还会写入各自的数据目录（如 `cc-bridge/data/`）。这些都不应纳入公开仓库；备份和恢复时也应保护其内容。
 
 ### CC 离线时的表现
 
@@ -434,13 +497,13 @@ Claude Code 可能因为 compaction（上下文压缩）、会话过期、或手
 
 **问：跑起来大概要花多少钱？**
 
-你需要 Claude Code 订阅（Pro 或 Max，Max 额度更高，重度使用推荐 Max）和一台 VPS（每月大约 $5-10）。Telegram 机器人和 Bark 都是免费的。
+只使用 API 模式时，需要自备 API Key，费用由模型服务商按其规则收取；使用 CC 模式时，需要可用的 Claude Code 账户/会话。若使用 VPS，还有服务器、域名等可能产生的费用。Bark、Telegram 等第三方服务的收费规则以各自官方说明为准。
 
 **问：不买 VPS 行不行？**
 
-chat-server 和 phone-widget 需要跑在一台能被外部访问到的机器上。VPS 是最简单的方案。如果你有自己的家庭服务器，可以配合内网穿透（比如 Cloudflare Tunnel、frp）来实现，但配置更复杂。
+相关服务可以运行在你自己的电脑或服务器上；需要从外网访问时才需要配置公网入口。VPS 是其中一种部署方式。如果你有自己的家庭服务器，可以配合内网穿透（比如 Cloudflare Tunnel、frp）来实现，但配置更复杂。
 
-**问：Telegram 聊天会额外消耗 token 吗？**
+**问：Telegram 聊天会消耗 Claude Code 额度吗？**
 
 会。从 Telegram 发来的消息会进入 Claude Code 的上下文窗口，消耗你的订阅额度。系统提示（CLAUDE.md 的内容）在每次会话开始时加载一次；单条聊天消息本身很轻量。
 
@@ -453,15 +516,15 @@ API 模式需要你有对应服务商的 API Key（比如 Anthropic API Key 或 
 **问：打开网址显示空白页或 502 Bad Gateway**
 
 这通常意味着 nginx 在把请求转发给后端服务，但后端没在运行。检查：
-1. chat-server 和 phone-widget 是否在运行？（`ps aux | grep node` 看一下）
-2. `.env` 里配置的端口和 nginx 配置里写的端口是否一致？
+1. `chat-server` 是否在运行？CC 模式还要检查 `cc-bridge/hub.js` 与 MCP Bridge 是否已连接。
+2. `.env` 的端口与 Nginx 配置是否一致？Hub 的 3462/3463 端口不应对公网开放。
 3. 查看 nginx 错误日志：`sudo tail -f /var/log/nginx/error.log`
 
 **问：Telegram 消息发了但 Claude Code 没回复**
 
 1. 确认 Claude Code 的 tmux 会话还活着：`tmux ls`
 2. 连上去看看：`tmux attach -t cc`，看 CC 是否卡住或已退出
-3. 确认 Telegram 插件已正确安装和配置（`/telegram:access` 是否完成了配对）
+3. 确认 Telegram 插件已正确安装、配对并可使用对应 CC 会话。
 
 **问：HTTPS / SSL 证书报错**
 
@@ -494,4 +557,8 @@ API 模式需要你有对应服务商的 API Key（比如 Anthropic API Key 或 
 
 ## 许可证
 
-PolyForm Noncommercial License 1.0.0
+本项目采用 **[PolyForm Noncommercial License 1.0.0](LICENSE)**（非商业用途源码可用协议）。
+
+你可以为了非商业目的使用、修改和分发本项目及修改版，但必须遵守许可证中的相关条件并保留必要通知；商业用途不在本许可证授权范围内，需要另行取得版权所有者许可。具体适用范围以仓库根目录的 [`LICENSE`](LICENSE) 为准。
+
+**注意：** 此协议不属于 OSI 认可的开源许可证；第三方依赖仍分别遵守各自的许可证。此前已经按照其他许可证合法获得的历史版本，其既有授权不会因为当前版本改用新协议而自动撤销。

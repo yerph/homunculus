@@ -1,5 +1,10 @@
 node_modules/
 .env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
 CLAUDE.md
 *.log
 .DS_Store
@@ -7,3 +12,11 @@ CLAUDE.md
 # 运行时数据（聊天记录、配置等，不应提交）
 chat-server/data/
 phone-widget/data/
+
+# CC Bridge runtime (session transcripts, messages, uploads, delivery state)
+cc-bridge/data/
+cc-bridge/uploads/
+cc-bridge/history.jsonl
+cc-bridge/*-delivered.json
+cc-bridge/*-inbox.json
+cc-bridge/classic-active-conversation.json
