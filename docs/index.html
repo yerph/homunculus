@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><meta content="#f7f7f3" name="theme-color"/><title>homunculus — an atlas of conversation / interactive edition</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Noto+Serif+SC:wght@400;500&display=swap');
+:root{--paper:#f7f7f3;--ink:#14233e;--blue:#1465d9;--line:#aebcd0;--serif:'Instrument Serif',Georgia,serif;--zh:'Noto Serif SC','Songti SC',serif;--mono:'DM Mono',monospace}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);background:var(--paper);font:14px/1.8 'DM Sans',sans-serif;overflow-x:hidden}body:before{content:'';pointer-events:none;position:fixed;inset:0;z-index:30;opacity:.09;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E")}a{color:inherit}.wrap{max-width:1450px;margin:auto;padding:0 5vw}.nav{height:78px;border-bottom:1px solid #263750;display:flex;align-items:center;gap:28px}.wordmark{font:italic 30px var(--serif);text-decoration:none}.navlinks{margin-left:auto;display:flex;gap:27px;font:10px var(--mono)}.navlinks a{text-decoration:none}.navlinks a:hover{text-decoration:underline}.issue{font:10px var(--mono);color:#7a8a9f;border-left:1px solid #abb6c4;padding-left:22px}.hero{height:690px;position:relative;border-bottom:1px solid #253852;isolation:isolate}.copy{position:relative;z-index:4;padding-top:70px;width:48%}.eyebrow{font:10px var(--mono);letter-spacing:.08em;color:#356caa}.eyebrow:before{content:'';display:inline-block;width:24px;height:2px;background:var(--blue);vertical-align:middle;margin-right:12px}.hero h1{font:italic clamp(80px,10.1vw,165px)/.9 var(--serif);font-weight:400;letter-spacing:-.045em;margin:50px 0 35px;white-space:nowrap}.hero h1:after{content:'*';font:italic 65px var(--serif);position:relative;color:var(--blue);top:-45px;left:-6px}.zh{font:500 clamp(21px,2vw,29px)/1.7 var(--zh);margin:0 0 23px}.desc{font:13px/2 'DM Sans',sans-serif;max-width:340px;color:#596a82}.actions{display:flex;align-items:center;gap:22px;margin:35px 0}.button{display:inline-flex;gap:35px;background:#13233e;color:#fff;padding:13px 22px;font:11px var(--mono);text-decoration:none}.button:hover{background:var(--blue)}.sub{font:11px var(--mono);text-underline-offset:5px}.fine{display:flex;justify-content:space-between;max-width:330px;border-top:1px solid #aab8c9;padding-top:12px;font:8px var(--mono);color:#8190a3}.art{position:absolute;z-index:1;inset:0 -8vw 0 26%;overflow:hidden;pointer-events:none}.art svg{height:100%;width:100%;display:block}.art .layer{animation:slideIn 1.4s cubic-bezier(.16,1,.3,1) both}.art .layer.two{animation-delay:.18s}.art .layer.three{animation-delay:.4s}.art .line{stroke-dasharray:1000;stroke-dashoffset:1000;animation:draw 3s ease .5s forwards}.annotation{position:absolute;right:8%;top:12%;font:9px/1.7 var(--mono);text-align:right;letter-spacing:.05em}.annotation:after{content:'';display:block;width:100px;height:1px;background:#1d406e;margin:10px 0 0 auto}.index{position:absolute;bottom:7%;right:9%;font:italic 100px var(--serif);color:var(--blue);opacity:.6}.desktop{position:absolute;z-index:4;right:0;top:22%;width:53%;background:#fcfdff;border:1px solid #243b5a;box-shadow:13px 17px 0 #1d416a33;transform:rotate(-2deg);animation:showUI 1s ease .3s both}.bar{height:36px;background:#f1f4f9;border-bottom:1px solid #c3ccda;display:flex;align-items:center;justify-content:space-between;padding:0 15px;font:italic 19px var(--serif)}.dots{display:flex;gap:5px}.dots i{width:6px;height:6px;border:1px solid #62748f;border-radius:50%}.small{font:9px var(--mono);color:#8492a8}.app{display:grid;grid-template-columns:26% 74%;min-height:300px}.side{background:#ecf1f9;border-right:1px solid #ccd6e6;padding:18px 10px}.side div{font:10px var(--mono);color:#7589a7;margin:10px 0;padding:5px 7px}.side .on{background:#d1e0f4;color:#1b4e91}.screen{padding:18px}.screenhead{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #d2dbe8;padding-bottom:14px;gap:8px}.tabs{display:flex;gap:2px;background:#e8edf5;padding:3px;border:1px solid #aabbd3}.tabs button{font:10px var(--mono);border:0;background:transparent;color:#7185a4;padding:5px 12px;cursor:pointer}.tabs button.active{background:#132440;color:#fff}.msgs{min-height:197px;display:flex;flex-direction:column;gap:10px;padding-top:16px}.msg{background:#eef2f9;border-left:2px solid #a9b9d0;padding:9px 11px;max-width:85%;font:11px/1.7 'DM Sans',sans-serif;animation:msgIn .4s both}.msg.me{align-self:flex-end;background:#dfeaf9;border:0;border-right:2px solid var(--blue)}.msg.note{align-self:center;border:0;background:transparent;font:9px var(--mono);color:#5478aa;text-align:center}.status{border-top:1px solid #d0d9e6;padding-top:10px;font:9px var(--mono);color:#7388a5;display:flex;justify-content:space-between}.phone{position:absolute;z-index:6;right:-4%;bottom:7%;width:170px;height:320px;border:2px solid #1b2a44;border-radius:26px;background:#fafcff;box-shadow:8px 12px 0 #1d416a33;transform:rotate(8deg);animation:showPhone 1s ease .7s both;overflow:hidden}.phone:before{content:'';position:absolute;top:7px;left:50%;width:45px;height:9px;background:#1b2a44;border-radius:12px;transform:translateX(-50%)}.phoneheader{padding:21px 9px 10px;text-align:center;border-bottom:1px solid #d2dce9;font:italic 17px var(--serif)}.phoneheader small{display:block;font:8px var(--mono);color:#8495af}.phonetabs{text-align:center;padding:12px;font:9px var(--mono);color:#567eb6}.phonefeed{display:flex;flex-direction:column;gap:9px;padding:6px 10px}.phonefeed span{display:block;padding:8px;background:#e8eff9;font:9px/1.5 'DM Sans',sans-serif;max-width:93%}.phonefeed span:nth-child(1){align-self:flex-end;background:#d8e7fb}.phonefeed span:nth-child(2){background:transparent;font:8px var(--mono);color:#6785ad;text-align:center;align-self:center}.phoneinput{position:absolute;bottom:15px;left:10px;right:10px;border:1px solid #d3dceb;padding:5px 8px;font:8px var(--mono);color:#9eacc1}.phoneinput b{float:right;color:var(--blue)}.ticker{height:49px;border-bottom:1px solid #293a54;display:flex;gap:55px;align-items:center;overflow:hidden;white-space:nowrap;font:10px var(--mono);letter-spacing:.04em;color:#50627c}.ticker i{color:var(--blue);font:italic 24px var(--serif)}.section{padding:95px 0;border-bottom:1px solid #b5c3d3}.sectionline{display:flex;justify-content:space-between;border-bottom:1px solid #bdc9d7;padding-bottom:12px;margin-bottom:38px;color:#54769f;font:10px var(--mono)}.section h2{font:500 clamp(27px,4vw,54px)/1.55 var(--zh);margin:0 0 24px}.section h2 em{font:italic 1.3em var(--serif);color:var(--blue)}.lead{max-width:520px;color:#62738b;font-size:13px}.cards{display:grid;grid-template-columns:1fr 1fr;border:1px solid #bdc9d7;margin-top:40px}.card{padding:30px;min-height:300px;position:relative;overflow:hidden}.card+.card{border-left:1px solid #bdc9d7;background:#eaf0f9}.card .no{font:10px var(--mono);color:#5279ae}.card h3{font:italic 62px/1 var(--serif);margin:55px 0 25px}.card p{font-size:12px;color:#60728b;max-width:440px}.demo{background:#e8effa}.demogrid{display:grid;grid-template-columns:42% 58%;align-items:center;gap:3%}.demotext{padding-right:25px}.demotext p{font-size:13px;color:#62758d}.controls{display:flex;gap:10px;flex-wrap:wrap;margin:30px 0}.controls button{border:1px solid #91a9c9;background:transparent;color:#244d89;padding:10px 14px;font:10px var(--mono);cursor:pointer}.controls button:hover{background:#d4e2f6}.step{border-top:1px solid #afc0d7;padding:17px 0;font:12px/1.9 'DM Sans',sans-serif;color:#59708e}.step strong{display:block;color:#24518c;font:11px var(--mono)}.board{min-height:440px;display:grid;place-items:center;position:relative}.board:before{content:'';position:absolute;inset:8% -10% 10% 8%;background:var(--blue);clip-path:polygon(28% 0,100% 0,100% 84%,72% 100%,0 65%)}.boardcard{position:relative;background:#fff;border:1px solid #254268;box-shadow:12px 14px 0 #183c6b44;width:90%;padding:22px;transform:rotate(1deg);min-height:320px}.boardcard .msgs{min-height:235px}.disclaimer{font:10px/1.9 var(--mono);color:#687e9e}.footer{padding:30px 0;font:10px var(--mono);color:#637895;display:flex;justify-content:space-between;gap:20px}@keyframes slideIn{from{opacity:0;transform:translateY(70px)}to{opacity:1;transform:none}}@keyframes draw{to{stroke-dashoffset:0}}@keyframes showUI{from{opacity:0;transform:translate(50px,25px) rotate(1deg)}to{opacity:1;transform:rotate(-2deg)}}@keyframes showPhone{from{opacity:0;transform:translate(40px,50px) rotate(16deg)}to{opacity:1;transform:rotate(8deg)}}@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(max-width:850px){.issue{display:none}.hero{height:920px}.copy{width:100%;padding-top:50px}.hero h1{font-size:clamp(74px,13vw,115px);margin:28px 0}.desc{max-width:470px}.art{inset:300px -20vw 0 0}.desktop{width:76%;top:auto;bottom:115px;right:6%}.phone{bottom:45px;right:-2%}.demogrid{grid-template-columns:1fr}.board{min-height:420px}.section{padding:75px 0}}@media(max-width:540px){.wrap{padding:0 20px}.nav{height:65px}.wordmark{font-size:26px}.navlinks{gap:13px;font-size:9px}.navlinks a:nth-child(2){display:none}.hero{height:900px}.copy{padding-top:38px}.hero h1{font-size:clamp(66px,15.5vw,88px);margin:27px 0}.hero h1:after{font-size:42px;top:-26px}.zh{font-size:20px}.desc{font-size:12px}.actions{margin:24px 0}.fine{font-size:8px}.art{inset:300px -40vw 0 -16vw}.desktop{width:92%;right:8%;bottom:145px}.bar{height:30px;font-size:15px}.app{min-height:250px}.side{padding:12px 5px}.side div{font-size:8px;padding:5px 4px}.screen{padding:10px}.screenhead .small{font-size:7px}.tabs button{padding:4px 8px;font-size:8px}.msgs{min-height:170px;gap:6px;padding-top:10px}.msg{font-size:9px;padding:7px}.phone{width:130px;height:250px;right:-4%;bottom:28px;border-radius:19px}.phoneheader{font-size:14px}.phonefeed span{font-size:8px}.index{font-size:70px}.section{padding:60px 0}.cards{grid-template-columns:1fr}.card+.card{border-left:0;border-top:1px solid #bdc9d7}.card{min-height:250px}.card h3{font-size:48px;margin:45px 0 20px}.board{min-height:360px}.boardcard{padding:14px;min-height:300px}.footer{font-size:8px}}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;scroll-behavior:auto!important}}
+
+/* phone proportions and tutorial landing additions */
+.phone{aspect-ratio:9/19.5;height:auto;max-width:170px}
+.field-guide-entry{max-width:1280px;margin:0 auto;padding:95px 5vw 100px;border-top:1px solid #b6c6da;position:relative}
+.field-guide-entry .field-eyebrow{font:11px 'DM Mono',monospace;color:#245b9e;letter-spacing:.08em}
+.field-guide-entry h2{font:italic clamp(58px,7vw,95px)/.98 'Instrument Serif',Georgia,serif;margin:25px 0;letter-spacing:-.04em;color:#14213b}
+.field-guide-entry>p{font:15px/2 'DM Sans',Arial,sans-serif;max-width:600px;color:#5c6c83}
+.field-links{margin-top:45px;border-top:1px solid #bbc9db}
+.field-links a{padding:20px 0;display:grid;grid-template-columns:80px minmax(0,1fr) 24px;gap:15px;border-bottom:1px solid #bbc9db;text-decoration:none;align-items:center;transition:padding .2s,background .2s}
+.field-links a:hover{padding-left:12px;background:#e6eefb}
+.field-links span{font:11px 'DM Mono',monospace;color:#2869b6}
+.field-links strong{font:500 19px 'Noto Serif SC','Songti SC',serif;color:#203e69}
+.field-links i{font:25px Georgia,serif;color:#2869b6}
+@media(max-width:550px){.phone{width:130px;height:auto;aspect-ratio:9/19.5}.field-guide-entry{padding:65px 20px}.field-guide-entry h2{font-size:61px}.field-links{margin-top:25px}.field-links a{grid-template-columns:47px minmax(0,1fr) 20px;gap:7px}.field-links strong{font-size:15px}.field-links span{font-size:9px}}
+
+
+/* Single-page editorial documentation */
+.merged-manual{background:#f7f7f3;color:#172a48;padding:95px 0 120px;border-top:1px solid #a6b7cc}.merged-shell{max-width:1380px;margin:auto;padding:0 4.5vw}.merged-manual-top{border-bottom:1px solid #b4c4d8;padding-bottom:45px}.merged-manual-top>span{font:11px 'DM Mono',monospace;color:#1768c6;letter-spacing:.06em}.merged-manual-top h2{font:italic clamp(78px,9vw,145px)/1 'Instrument Serif',Georgia,serif;margin:22px 0;color:#172a48;letter-spacing:-.04em}.merged-manual-top p{max-width:600px;font:14px/2 'DM Sans',sans-serif;color:#586d88}.merged-reader{display:grid;grid-template-columns:230px minmax(0,1fr);gap:45px}.merged-side{border-right:1px solid #becce0;padding:34px 20px 30px 0}.merged-side-sticky{position:sticky;top:25px;max-height:calc(100vh - 50px);overflow:auto;scrollbar-width:thin}.merged-small{font:10px 'DM Mono',monospace;color:#1b63b2;letter-spacing:.08em;margin-bottom:17px}.merged-side input{width:100%;border:1px solid #b3c8e2;background:#fff;padding:12px 10px;font:11px 'DM Sans',sans-serif;margin-bottom:12px}.merged-toc-link{display:flex;gap:10px;text-decoration:none;border-left:2px solid transparent;padding:10px 7px;font:12px/1.6 'DM Sans',sans-serif;color:#5c7190;transition:all .2s}.merged-toc-link span{font:9px 'DM Mono',monospace;color:#4274ab;padding-top:3px}.merged-toc-link:hover,.merged-toc-link.active{color:#155ab1;border-left-color:#1768c6;background:#e8effa}.merged-content{min-width:0;padding-top:20px}.merged-content .chapter{padding:55px 0 34px;border-bottom:1px solid #b7c8df;scroll-margin-top:30px}.merged-content .ch-head{border-bottom:1px solid #becde0;padding-bottom:18px;margin-bottom:28px}.merged-content .ch-head small{font:10px 'DM Mono',monospace;color:#1a66bf}.merged-content .ch-head h2{font:500 clamp(24px,3vw,40px)/1.55 'Noto Serif SC','Songti SC',serif;margin:14px 0 0}.merged-content .chapter-body h3{font:500 21px/1.6 'Noto Serif SC','Songti SC',serif;margin:33px 0 14px}.merged-content p,.merged-content li{font:13px/2 'DM Sans',sans-serif;color:#566c86}.merged-content p strong{color:#225497}.merged-content a:not(.merged-toc-link){color:#245d9f;text-underline-offset:4px}.merged-content .aside{padding:14px 18px;border-left:2px solid #1e6dc6;background:#e7eef9}.merged-content .columns{display:grid;grid-template-columns:1fr 1fr;border:1px solid #b9c8dc}.merged-content .feature{padding:25px}.merged-content .feature+ .feature{border-left:1px solid #b9c8dc}.merged-content .feature>span{font:10px 'DM Mono',monospace;color:#1465bd}.merged-content .feature h3{font:italic 36px 'Instrument Serif',Georgia,serif}.merged-content table{width:100%;border-collapse:collapse;font:12px/1.8 'DM Sans',sans-serif;margin:20px 0}.merged-content th,.merged-content td{border:1px solid #b9c8dc;padding:11px;text-align:left;vertical-align:top}.merged-content th{background:#e5edfa;color:#2a5c9c}.merged-content code{font:11px 'DM Mono',monospace;background:#e7edf5;padding:2px 5px;overflow-wrap:anywhere}.merged-content pre{position:relative;background:#142541;color:#dfeaff;padding:23px;overflow:auto;font:11px/1.95 'DM Mono',monospace}.merged-content pre code{background:transparent;color:inherit;padding:0;font:inherit}.merged-content details{border-bottom:1px solid #b5c8e0;padding:13px 0}.merged-content summary{cursor:pointer;color:#295b9a;font-weight:600}.merged-content .stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #b9c8dc}.merged-content .stats>div{padding:22px}.merged-content .stats>div+div{border-left:1px solid #b9c8dc}.merged-content .stats strong{display:block;font:italic 60px 'Instrument Serif',Georgia,serif;color:#1465d9}.merged-content .stats span{font:10px/1.8 'DM Mono',monospace}.merged-footer{margin-top:45px;padding-top:23px;border-top:1px solid #b6c8df;font:10px 'DM Mono',monospace;color:#617b9a}.merged-mobile-toc{display:none}
+/* Detailed interactive architecture atlas */
+.atlas{border:1px solid #9cb6d8;background:#eef4fb;padding:25px;margin:25px 0 38px;min-width:0}.atlas-heading{display:flex;gap:14px;justify-content:space-between;align-items:end;border-bottom:1px solid #aac4e2;padding-bottom:18px}.atlas-heading>div:first-child{flex:1}.atlas-heading span,.atlas-band-title,.atlas-legend{font:10px 'DM Mono',monospace;color:#275eaa;letter-spacing:.04em}.atlas-heading h3{font:500 21px/1.5 'Noto Serif SC','Songti SC',serif!important;margin:10px 0!important}.atlas-heading p{max-width:620px;margin:0;font-size:12px!important}.atlas-tabs{display:flex;gap:2px;padding:3px;background:#d8e6f7}.atlas-tabs button{border:0;background:none;color:#4775a9;padding:8px 11px;cursor:pointer;font:10px 'DM Mono',monospace}.atlas-tabs button.selected{background:#164f99;color:#fff}.atlas-legend{display:flex;gap:22px;flex-wrap:wrap;padding:17px 0;color:#5278a9}.atlas-band{border-top:1px solid #b3c8e0;padding:19px 0}.atlas-band-title{margin-bottom:17px}.atlas-flow{display:flex;gap:9px;align-items:stretch}.atlas-flow.horizontal>.atlas-node{flex:1}.atlas-flow.vertical{flex-direction:column;max-width:450px;margin:auto}.atlas-node{display:flex;flex-direction:column;gap:7px;text-align:left;border:1px solid #a1bcdf;border-left:3px solid #2673ce;background:#fff;padding:15px;min-width:0;color:#1e4169;cursor:pointer;transition:opacity .2s,transform .2s,border-color .2s}.atlas-node:hover{transform:translateY(-2px);border-color:#115bb4}.atlas-node:focus-visible{outline:2px solid #1b65bd;outline-offset:2px}.atlas-node small{font:9px 'DM Mono',monospace;color:#5685bb}.atlas-node strong{font:600 15px 'DM Sans',sans-serif;color:#19437b}.atlas-node em{font:11px/1.65 'DM Sans',sans-serif;font-style:normal;color:#697f9a}.atlas-node[data-type="cc"]{border-left-color:#9088bf}.atlas-node[data-type="sync"]{border-left-color:#c99663}.atlas-node[data-type="data"]{border-left-color:#778ca6}.connector{font:24px Georgia,serif;color:#5279af;display:flex;align-items:center}.down{text-align:center;font:19px Georgia,serif;color:#477ba8}.atlas-lanes{display:grid;grid-template-columns:1fr 1fr;gap:18px}.atlas-lane{border:1px solid #b4c9e2;padding:19px;background:#f8fbff}.atlas-note,.atlas-footnote{background:#e2edfa;border-left:2px solid #88b3e4;color:#647b9a;font:11px/1.9 'DM Sans',sans-serif;padding:12px 15px;margin-top:14px}.atlas-inspector{background:#19304f;color:#e9f2ff;padding:19px}.atlas-inspector span{font:9px 'DM Mono',monospace;color:#9cbee6}.atlas-inspector strong{display:block;font:500 19px 'Noto Serif SC','Songti SC',serif;margin:12px 0}.atlas-inspector p{color:#cadaef!important;margin:0}.atlas[data-mode="api"] .atlas-node[data-type="cc"],.atlas[data-mode="api"] .atlas-node[data-type="sync"],.atlas[data-mode="cc"] .atlas-node[data-type="api"],.atlas[data-mode="cc"] .atlas-node[data-type="sync"],.atlas[data-mode="sync"] .atlas-node[data-type="api"],.atlas[data-mode="sync"] .atlas-node[data-type="cc"]{opacity:.27}.atlas .atlas-node[data-type="base"]{opacity:1!important}.compression-map{margin:20px 0;border:1px solid #b1c6e2;background:#eff5fd;padding:20px}.compression-step{border:1px solid #aac4e0;border-left:3px solid #236ab8;padding:15px;background:#fff}.compression-step small{font:9px 'DM Mono',monospace;color:#4078b1}.compression-step b{display:block;margin:8px 0;font-size:15px}.compression-step p{margin:0;font-size:11px}.compression-down{text-align:center;color:#367bc4;padding:8px}.compression-branches{display:grid;grid-template-columns:1fr 1fr;gap:14px}.compression-step.successful{border-left-color:#5eab9b}.compression-step.failure{border-left-color:#ce9d7a}
+@media(max-width:900px){.merged-reader{grid-template-columns:1fr}.merged-side{display:none}.merged-mobile-toc{display:block;margin:24px 0;border:1px solid #b5c9e3}.merged-mobile-toc summary{font:11px 'DM Mono',monospace;padding:14px}.merged-mobile-toc nav{padding:10px;border-top:1px solid #b5c9e3;max-height:350px;overflow:auto}.merged-manual{padding:72px 0}.atlas-lanes{grid-template-columns:1fr}}
+@media(max-width:550px){.merged-shell{padding:0 20px}.merged-manual-top h2{font-size:71px}.atlas{padding:13px}.atlas-heading{display:block}.atlas-tabs{margin-top:14px;width:max-content}.atlas-flow.horizontal{flex-direction:column}.connector{transform:rotate(90deg);justify-content:center;height:19px}.atlas-node{padding:12px}.compression-branches{grid-template-columns:1fr}.merged-content .columns{grid-template-columns:1fr}.merged-content .feature+ .feature{border:0;border-top:1px solid #b9c8dc}.merged-content .stats strong{font-size:40px}.merged-content .stats>div{padding:11px}.merged-content .stats span{font-size:9px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.atlas-node,.merged-toc-link{transition:none!important}}
+
+.demo-stage-indicator{display:flex;gap:5px;flex-wrap:wrap;margin:20px 0}.demo-stage-indicator button{border:1px solid #8daacf;color:#476d9b;background:#fff;padding:8px 10px;font:10px 'DM Mono',monospace;cursor:pointer}.demo-stage-indicator button.on{background:#1457a9;color:white;border-color:#1457a9}.demo-stage-indicator button:hover{border-color:#1457a9}
+/* Mobile hardening: keep the composition inside the device viewport. */
+html,body{max-width:100%;overflow-x:clip}
+.hero{max-width:100%;overflow:hidden}
+@media(max-width:540px){.hero h1{font-size:clamp(59px,14.4vw,73px)}.hero .copy{width:100%;min-width:0}.hero .desc{max-width:calc(100vw - 45px);overflow-wrap:anywhere}.desktop{width:87%;right:12%;bottom:165px}.phone{width:clamp(106px,29vw,122px);max-width:122px;aspect-ratio:9/19.5;height:auto;right:1%;bottom:27px;border-radius:19px}.art{inset:320px -17vw 0 -16vw}.navlinks{gap:9px}.navlinks a{font-size:8px}.merged-manual{overflow:hidden}}
+
+/* DEMO V2 / progressive enhancement: controls operate by native radio selection.
+   No JS, timers, remote API calls, or embedded preview privileges required. */
+.demo .stage-radio{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.demo .stage-radio:focus-visible ~ .demogrid .demo-stage-indicator{outline:2px solid #174e98;outline-offset:5px}
+.demo-stage-indicator .stage-choice,.demo-native-controls label{display:inline-flex;align-items:center;justify-content:center;min-height:41px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:rgba(18,92,188,.16);touch-action:manipulation;text-decoration:none;transition:background .16s,color .16s,transform .16s}
+.demo-stage-indicator .stage-choice{border:1px solid #8daacf;color:#476d9b;background:#fff;padding:8px 12px;font:10px 'DM Mono',monospace}
+.demo-stage-indicator .stage-choice:hover{border-color:#1457a9;transform:translateY(-2px)}
+#stage-1:checked ~ .demogrid .stage-choice[for="stage-1"],
+#stage-2:checked ~ .demogrid .stage-choice[for="stage-2"],
+#stage-3:checked ~ .demogrid .stage-choice[for="stage-3"],
+#stage-4:checked ~ .demogrid .stage-choice[for="stage-4"]{background:#1457a9;color:white;border-color:#1457a9}
+.demo .stage-description,.demo .stage-panel,.demo .stage-next{display:none}
+#stage-1:checked ~ .demogrid .stage-1,
+#stage-2:checked ~ .demogrid .stage-2,
+#stage-3:checked ~ .demogrid .stage-3,
+#stage-4:checked ~ .demogrid .stage-4{display:block}
+#stage-1:checked ~ .demogrid .next-1,
+#stage-2:checked ~ .demogrid .next-2,
+#stage-3:checked ~ .demogrid .next-3,
+#stage-4:checked ~ .demogrid .next-4{display:inline-flex}
+.demo-native-controls{gap:10px;flex-wrap:wrap;margin:28px 0}
+.demo-native-controls label{border:1px solid #91a9c9;color:#244d89;background:#fbfdff;padding:10px 16px;font:11px 'DM Mono',monospace;gap:12px}
+.demo-native-controls label:hover{background:#d5e6ff}
+.demo-native-controls label:active,.demo-stage-indicator label:active{transform:translateY(1px)}
+.demo .stage-description strong{display:block;font:11px var(--mono);color:#24518c}
+.demo .stage-description span{display:block;font:12px/1.9 'DM Sans',sans-serif;color:#59708e}
+.demo .stage-panel{min-height:280px;animation:stageReveal .27s ease both}
+.demo .stage-panel .msgs{min-height:217px}
+@keyframes stageReveal{from{opacity:.6;transform:translateY(6px)}to{opacity:1;transform:none}}
+.folio-cross{display:block;width:142px;height:142px;line-height:0;transform:rotate(22deg)}
+.folio-cross svg{display:block;width:100%;height:100%}
+@media(max-width:750px){.demo .demogrid{display:grid;grid-template-columns:1fr;gap:15px}.demo .demotext{padding-right:0}.demo .board{min-height:330px}.demo .boardcard{width:94%;padding:14px;min-height:300px}.demo .stage-panel .msgs{min-height:195px}}
+@media(max-width:520px){.demo-stage-indicator .stage-choice{font-size:10px;padding:10px 12px;min-height:46px}.demo .board{margin-top:2px}.demo .boardcard{min-height:310px}.folio-cross{width:120px;height:120px}}
+
+/* iOS-neutral details, drawn with CSS instead of emoji-capable Unicode glyphs. */
+.drawn-arrow{display:inline-block;width:34px;height:1px;background:currentColor;position:relative;vertical-align:middle;opacity:.82}
+.drawn-arrow:after{content:'';position:absolute;right:1px;top:-4px;width:8px;height:8px;border-top:1px solid currentColor;border-right:1px solid currentColor;transform:rotate(45deg)}
+.drawn-arrow.vertical{transform:rotate(90deg)}
+/* More direct rhythm: the live illustration flows into the demo, then the guide. */
+#demo{scroll-margin-top:18px}
+.merged-manual{scroll-margin-top:10px}
+@media(max-width:650px){.demogrid{gap:36px}.demo-stage-indicator{gap:8px}.demo-stage-indicator label{touch-action:manipulation}}
+
+/* 2026-11-16: dialogue cinema; keep the original blue/white atlas but use one thread. */
+.hero .tabs{display:inline-flex;gap:3px;padding:4px;border:1px solid #91a9c8;background:#e3ebf7;flex:none}
+.hero .tabs button{font:10px var(--mono);border:0;color:#5a7498;padding:6px 13px;background:transparent;cursor:pointer;letter-spacing:.06em;transition:background .2s,color .2s}
+.hero .tabs button.active{background:#172a4c;color:#fff;box-shadow:0 1px 0 #172a4c}
+.hero .phone{width:clamp(105px,11.5vw,145px)!important;height:auto!important;aspect-ratio:9/16.7!important;max-width:145px!important;bottom:9%!important;right:0!important;overflow:hidden}
+.hero .phoneheader{font-size:15px}.hero .phoneheader small{font-size:7px}.hero .phonefeed{max-height:50%;overflow:hidden}.hero .phonefeed span{overflow-wrap:anywhere;line-height:1.5}.hero .phoneinput{position:absolute;bottom:8px;left:8px;right:8px;font-size:8px;white-space:nowrap}
+.demo{padding-top:110px;padding-bottom:95px}.dialog-intro{display:grid;grid-template-columns:1fr minmax(200px,340px);align-items:end;gap:55px;margin:42px 0 55px}.dialog-intro h2{font:500 clamp(33px,4.2vw,57px)/1.35 var(--zh);letter-spacing:-.035em;margin:16px 0 0}.dialog-intro h2 i{font:italic 1.03em var(--serif);color:#1766c9}.dialog-intro p{font:13px/2 var(--sans);color:#627a9a}.serial-kicker{font:10px var(--mono);color:#2866ae;letter-spacing:.08em}.dialog-layout{display:grid;grid-template-columns:minmax(0,1fr) 236px;align-items:start;gap:42px;position:relative}.dialog-layout:before{content:'';position:absolute;width:54%;height:60%;background:#1766d7;clip-path:polygon(18% 0,100% 0,90% 100%,0 84%);top:13%;left:-5%;z-index:0}.conversation-shell{height:min(680px,77vh);min-height:510px;display:flex;flex-direction:column;min-width:0;background:#fff;border:1px solid #1d3a64;box-shadow:12px 13px 0 #1559a85e;position:relative;z-index:1;transform:rotate(-.4deg)}.conversation-title{height:53px;padding:0 23px;display:flex;align-items:center;justify-content:space-between;gap:15px;background:#f2f5fa;border-bottom:1px solid #b9cade;font:italic 25px var(--serif);color:#22395a}.conversation-title>span:first-of-type{flex:1}.conversation-title small,.demo-window-index{font:10px var(--mono);color:#7491b2;font-style:normal;letter-spacing:.03em}.window-dots{display:flex;gap:5px}.window-dots i{height:7px;width:7px;border:1px solid #667c9a;border-radius:50%}.conversation-toolbar{height:59px;display:flex;align-items:center;justify-content:space-between;padding:0 27px;border-bottom:1px solid #d6e1f0}.live-badge{display:flex;align-items:center;gap:9px;font:10px var(--mono);letter-spacing:.075em;color:#22528d}.live-badge i{width:7px;height:7px;background:#2e69c3;border-radius:50%;box-shadow:0 0 0 5px #dceafa}.conv-mode-tabs{display:flex;gap:3px;background:#eef3fa;border:1px solid #c0cfe2;padding:3px}.conv-mode-tabs span{min-width:49px;text-align:center;padding:7px 10px;color:#8194ae;font:11px var(--mono)}.conv-mode-tabs span.current{color:#fff;background:#142845}.conversation-stream{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:22px 26px 12px;display:flex;flex-direction:column;gap:15px;scrollbar-color:#9bb5d7 transparent;scrollbar-width:thin;cursor:pointer}.conversation-stream:focus-visible{outline:2px solid #356ac4;outline-offset:-2px}.stream-topline{display:flex;justify-content:space-between;gap:15px;color:#8ca0bd;font:9px var(--mono);margin-bottom:6px}.chat-line{display:flex;flex-direction:column;align-items:flex-start;gap:6px;animation:message-pulse 17.6s infinite;animation-delay:calc(var(--i) * 2.2s);opacity:0;transform:translateY(15px) scale(.97)}.chat-line.user-line{align-items:flex-end}.chat-caption{font:9px var(--mono);color:#8ea0b8;letter-spacing:.04em}.chat-bubble{max-width:min(80%,460px);padding:13px 16px;background:#ecf2fb;border-left:3px solid #b5c5dc;color:#223956;font:13px/1.75 var(--sans);box-shadow:0 2px 4px #193c6412}.user-line .chat-bubble{background:#dceafa;border-left:0;border-right:3px solid #1a64c5}.system-line{width:100%;align-items:center!important;margin:8px 0}.system-note{display:flex;align-items:center;gap:13px;width:100%;text-align:center;font:9px/1.6 var(--mono);color:#4277b4;letter-spacing:.04em}.line-dot{height:1px;background:#a9bfdc;flex:1}.stream-bottom-spacer{height:6px;flex-shrink:0}.chat-composer{height:58px;border-top:1px solid #d2deed;background:#f8faff;display:flex;align-items:center;justify-content:space-between;padding:0 22px;color:#9aabc0;font:11px var(--mono)}.composer-send{height:25px;width:25px;background:#1959b2;position:relative}.composer-send:before{content:'';width:8px;height:8px;position:absolute;left:7px;top:9px;border-top:1.5px solid white;border-right:1.5px solid white;transform:rotate(45deg)}
+.conversation-rail{padding:12px 0 0;position:relative;z-index:2}.rail-number{font:italic clamp(78px,8vw,119px)/.9 var(--serif);color:#1764c7;white-space:nowrap}.rail-number small{font:16px var(--mono);color:#728eaf}.rail-label{font:10px/2 var(--mono);letter-spacing:.08em;color:#5b79a4;margin:20px 0 36px}.rail-folio{display:flex;flex-direction:column;gap:12px;font:11px var(--mono);color:#2f5d9b;margin-bottom:48px}.rail-line{width:100%;height:1px;background:linear-gradient(90deg,#1b60b7,transparent)}.rail-controls{display:flex;flex-direction:column;gap:11px}.rail-button{width:100%;background:#eff4fc;color:#25599e;border:1px solid #9eb8dd;padding:15px 19px;text-align:left;cursor:pointer;font:12px var(--mono);transition:background .18s,transform .18s;display:flex;align-items:center;justify-content:space-between}.rail-button.primary{background:#1c5fb6;color:#fff;border-color:#1c5fb6}.rail-button:hover{transform:translateX(4px);background:#d9e8fb}.rail-button.primary:hover{background:#154b95}.rail-replay{padding:9px 0;border:0;background:none;color:#4575b3;cursor:pointer;text-align:left;font:10px var(--mono);letter-spacing:.04em}.rail-replay:hover{text-decoration:underline}.arrow-css{display:inline-block;width:10px;height:10px;border-top:1px solid currentColor;border-right:1px solid currentColor;transform:rotate(45deg)}.rail-track{height:2px;background:#c4d4e7;margin:29px 0 20px;overflow:hidden}.rail-track span{width:12.5%;height:100%;background:#1c61ba;display:block;transition:width .25s}.rail-footnote{font:11px/1.85 var(--sans);color:#7a8fa9}.dialog-bottom{margin-top:52px;padding:15px 0 0;border-top:1px solid #c0d0e2;display:flex;justify-content:space-between;gap:16px;font:9px var(--mono);color:#6d87a9}
+@keyframes message-pulse{0%,1%{opacity:0;transform:translateY(15px) scale(.97)}5%,94%{opacity:1;transform:translateY(0) scale(1)}98%,100%{opacity:0;transform:translateY(0)}}
+/* When scripting runs, remove the CSS fallback loop and reveal message cards sequentially. */
+.js-ready .chat-line{animation:none!important;opacity:0;transform:translateY(15px) scale(.97);transition:opacity .4s ease,transform .45s cubic-bezier(.19,1,.28,1);pointer-events:none}.js-ready .chat-line.shown{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}.js-ready .chat-line.system-line.shown{opacity:1}.hero .desktop .msgs{position:relative}
+@media(max-width:820px){.dialog-intro{grid-template-columns:1fr;gap:8px;margin-bottom:30px}.dialog-layout{grid-template-columns:minmax(0,1fr);gap:40px}.conversation-rail{display:grid;grid-template-columns:96px 1fr;gap:10px 20px;align-items:start}.rail-number{font-size:74px;grid-row:span 2}.rail-label{margin:4px 0}.rail-folio{margin:0;gap:7px}.rail-controls{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.rail-replay{grid-column:1/-1}.rail-track,.rail-footnote{grid-column:1/-1;margin:10px 0}.conversation-shell{height:530px;min-height:0}.dialog-intro h2{font-size:clamp(32px,7vw,48px)}}
+@media(max-width:540px){.hero .phone{width:105px!important;max-width:105px!important;right:0!important;bottom:15%!important;aspect-ratio:9/16.2!important;transform:rotate(6deg)!important}.hero .phoneheader{font-size:13px}.hero .phoneheader small{font-size:6px}.hero .phonefeed span{font-size:8px;padding:5px}.hero .phoneinput{font-size:7px}.hero .desktop{bottom:175px;width:87%;right:14%}.hero .tabs button{padding:6px 11px;font-size:9px}.dialog-intro h2{font-size:34px}.demo{padding-top:65px}.conversation-shell{height:480px;min-height:0;transform:none;box-shadow:8px 9px 0 #1559a85e}.conversation-title{padding:0 13px;font-size:21px;height:45px}.conversation-title small{font-size:8px}.conversation-toolbar{padding:0 15px;height:52px}.conversation-stream{padding:15px 12px 9px;gap:12px}.chat-bubble{font-size:12px;padding:10px 12px;max-width:87%}.chat-caption{font-size:8px}.conversation-rail{gap:10px 13px}.rail-number{font-size:68px}.rail-button{font-size:10px;padding:13px 12px}.rail-folio,.rail-label{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.chat-line{animation:none;opacity:1;transform:none}.js-ready .chat-line{transition:none}}
+
+/* final mobile polish: align counter and controls, prevent the phone composer from overlapping the last bubble */
+@media(max-width:820px){.conversation-rail{display:block}.rail-number{font-size:76px;line-height:1;display:block;margin-bottom:9px}.rail-label{margin:0 0 13px;max-width:100%;line-height:1.6}.rail-folio{display:flex;flex-direction:row;gap:14px;align-items:center;margin:0 0 22px}.rail-folio .rail-line{flex:1}.rail-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rail-track{margin:19px 0 12px}.rail-footnote{margin-top:0}}
+@media(max-width:540px){.conversation-rail{padding-top:3px}.rail-number{font-size:70px}.rail-label{font-size:9px}.hero .phonefeed{max-height:45%}.hero .phonefeed span:nth-child(n+3){display:none}.hero .phoneinput{height:18px;line-height:18px;white-space:nowrap;overflow:hidden;background:#f4f7fc}.hero .phoneheader{line-height:1.15}.hero .phone{right:1%!important}}
+
+/* 2026-11-16 mobile layout repair: the headline must stay inside the container. */
+.dialog-intro{grid-template-columns:minmax(0,1fr) minmax(0,340px);max-width:100%;min-width:0}
+.dialog-intro>div,.dialog-intro>p{min-width:0;max-width:100%}
+.dialog-intro h2{max-width:100%;overflow-wrap:anywhere;text-wrap:balance}
+.dialog-intro h2 i{display:inline-block;max-width:100%;overflow-wrap:anywhere}
+@media(max-width:880px){.dialog-intro{grid-template-columns:minmax(0,1fr);gap:12px}.dialog-intro h2{font-size:clamp(29px,7.1vw,45px);line-height:1.35;letter-spacing:-.04em}.dialog-intro{margin:28px 0 34px}.dialog-intro p{font-size:12px}}
+@media(max-width:410px){.dialog-intro h2{font-size:clamp(27px,7.3vw,33px)}.dialog-intro h2 i{font-size:1em}.conversation-title{min-width:0}.conversation-title>span:first-of-type{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.conversation-title small{display:none}}
+/* Persistent, JS-free automatic conversation sequence (no manual action required). */
+.chat-line{animation-name:message-retain;animation-duration:20.8s;animation-timing-function:linear;animation-iteration-count:infinite;animation-delay:calc(var(--i)*2.35s - 20.8s);animation-fill-mode:both}
+@keyframes message-retain{0%,1%{opacity:0;transform:translateY(15px) scale(.98)}3%,88%{opacity:1;transform:translateY(0) scale(1)}94%,100%{opacity:0;transform:translateY(0)}}
+/* JS-free manual controls: ordinary hash links remain usable when scripts are disabled. */
+.css-manual{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 0;position:relative;z-index:3}
+.css-manual a{font:10px var(--mono);text-decoration:none;border:1px solid #7397c5;color:#28558e;background:#edf3fd;padding:10px 13px;min-height:38px;display:inline-flex;align-items:center}
+.css-manual a:hover,.css-manual a:focus-visible{background:#dceafd;border-color:#1c5fb0}
+.css-manual .css-stop{display:none}
+/* Clicking a step anchor switches from autoplay to a durable manual state. */
+.conversation-shell:has(.chat-line:target) .chat-line{animation:none!important;opacity:0;transform:none;transition:opacity .25s ease}
+.conversation-shell:has(.chat-line[data-i="0"]:target) .chat-line:nth-of-type(2),
+.conversation-shell:has(.chat-line[data-i="1"]:target) .chat-line:nth-of-type(-n+3),
+.conversation-shell:has(.chat-line[data-i="2"]:target) .chat-line:nth-of-type(-n+4),
+.conversation-shell:has(.chat-line[data-i="3"]:target) .chat-line:nth-of-type(-n+5),
+.conversation-shell:has(.chat-line[data-i="4"]:target) .chat-line:nth-of-type(-n+6),
+.conversation-shell:has(.chat-line[data-i="5"]:target) .chat-line:nth-of-type(-n+7),
+.conversation-shell:has(.chat-line[data-i="6"]:target) .chat-line:nth-of-type(-n+8),
+.conversation-shell:has(.chat-line[data-i="7"]:target) .chat-line:nth-of-type(-n+9){opacity:1}
+/* Native hash navigation is a fallback for previewers that disallow JavaScript. */
+.conversation-shell:has(.chat-line:target) .conversation-stream{scroll-behavior:smooth}
+.js-ready .css-manual{display:none}
+@media(prefers-reduced-motion:reduce){.chat-line{animation:none!important;opacity:1!important;transform:none!important}}
+.conversation-shell:has(.chat-line[data-i="0"]:target) .chat-line[data-i="0"]{opacity:1!important;transform:none!important}
+.conversation-shell:has(.chat-line[data-i="1"]:target) .chat-line[data-i="0"],
+.conversation-shell:has(.chat-line[data-i="1"]:target) .chat-line[data-i="1"]{opacity:1!important;transform:none!important}
+.conversation-shell:has(.chat-line[data-i="2"]:target) .chat-line[data-i="0"],
+.conversation-shell:has(.chat-line[data-i="2"]:target) .chat-line[data-i="1"],
+.conversation-shell:has(.chat-line[data-i="2"]:target) .chat-line[data-i="2"]{opacity:1!important;transform:none!important}
+.conversation-shell:has(.chat-line[data-i="3"]:target) .chat-line[data-i="0"],
+.conversation-shell:has(.chat-line[data-i="3"]:target) .chat-line[data-i="1"],
+.conversation-shell:has(.chat-line[data-i="3"]:target) .chat-line[data-i="2"],
+.conversation-shell:has(.chat-line[data-i="3"]:target) .chat-line[data-i="3"]{opacity:1!important;transform:none!important}
+.conversation-shell:has(.chat-line[data-i="4"]:target) .chat-line[data-i="0"],
+.conversation-shell:has(.chat-line[data-i="4"]:target) .chat-line[data-i="1"],
+.conversation-shell:has(.chat-line[data-i="4"]:target) .chat-line[data-i="2"],
+.conversation-shell:has(.chat-line[data-i="4"]:target) .chat-line[data-i="3"],
+.conversation-shell:has(.chat-line[data-i="4"]:target) .chat-line[data-i="4"]{opacity:1!important;transform:none!important}
+.conversation-shell:has(.chat-line[data-i="5"]:target) .chat-line[data-i="0"],
+.conversation-shell:has(.chat-line[data-i="5"]:target) .chat-line[data-i="1"],
+.conversation-shell:has(.chat-line[data-i="5"]:target) .chat-line[data-i="2"],
+.conversation-shell:has(.chat-line[data-i="5"]:target) .chat-line[data-i="3"],
+.conversation-shell:has(.chat-line[data-i="5"]:target) .chat-line[data-i="4"],
+.conversation-shell:has(.chat-line[data-i="5"]:target) .chat-line[data-i="5"]{opacity:1!important;transform:none!important}
+.conversation-shell:has(.chat-line[data-i="6"]:target) .chat-line[data-i="0"],
+.conversation-shell:has(.chat-line[data-i="6"]:target) .chat-line[data-i="1"],
+.conversation-shell:has(.chat-line[data-i="6"]:target) .chat-line[data-i="2"],
+.conversation-shell:has(.chat-line[data-i="6"]:target) .chat-line[data-i="3"],
+.conversation-shell:has(.chat-line[data-i="6"]:target) .chat-line[data-i="4"],
+.conversation-shell:has(.chat-line[data-i="6"]:target) .chat-line[data-i="5"],
+.conversation-shell:has(.chat-line[data-i="6"]:target) .chat-line[data-i="6"]{opacity:1!important;transform:none!important}
+.conversation-shell:has(.chat-line[data-i="7"]:target) .chat-line[data-i="0"],
+.conversation-shell:has(.chat-line[data-i="7"]:target) .chat-line[data-i="1"],
+.conversation-shell:has(.chat-line[data-i="7"]:target) .chat-line[data-i="2"],
+.conversation-shell:has(.chat-line[data-i="7"]:target) .chat-line[data-i="3"],
+.conversation-shell:has(.chat-line[data-i="7"]:target) .chat-line[data-i="4"],
+.conversation-shell:has(.chat-line[data-i="7"]:target) .chat-line[data-i="5"],
+.conversation-shell:has(.chat-line[data-i="7"]:target) .chat-line[data-i="6"],
+.conversation-shell:has(.chat-line[data-i="7"]:target) .chat-line[data-i="7"]{opacity:1!important;transform:none!important}
+
+/* CHAT SEQUENCE V4 — real message insertion in browsers; compact reveal fallback. */
+.dialog-layout{grid-template-columns:minmax(0,1fr);max-width:970px;margin:0 auto}
+.dialog-layout:before{width:67%;left:-5%;height:82%;top:10%}
+.conversation-shell{width:100%;max-width:900px;justify-self:center;transform:rotate(-.3deg)}
+/* Without script: each existing row occupies zero height until its turn.
+   With script: all rows are physically removed and appended when due. */
+.conversation-stream{gap:0}
+/* Previewer-safe fallback: snap the WHOLE row into the thread at its turn.
+   No intermediate max-height clipping that produces empty colored lines. */
+.conversation-stream .chat-line{visibility:hidden;opacity:0;max-height:0;margin:0;overflow:hidden;transform:none;animation:entire-message-appear .01s steps(1,end) both!important;animation-delay:calc(var(--i) * 2.1s + .7s)!important;animation-iteration-count:1!important}
+@keyframes entire-message-appear{0%{visibility:hidden;opacity:0;max-height:0;margin:0;overflow:hidden}100%{visibility:visible;opacity:1;max-height:220px;margin:14px 0 0;overflow:visible}}
+/* Once a row is revealed, no separate animation should hide its text. */
+.conversation-stream .chat-line .chat-caption,.conversation-stream .chat-line .chat-bubble,.conversation-stream .chat-line .system-note{animation:none!important;opacity:1!important;visibility:visible!important;transform:none!important}
+
+.insertion-ready .conversation-stream .chat-line{animation:none;visibility:visible;opacity:1;max-height:none;margin-top:15px;overflow:visible;transform:none}
+.insertion-ready .conversation-stream .chat-line.inserted{animation:new-bubble .42s cubic-bezier(.2,.8,.2,1) both}
+@keyframes new-bubble{from{opacity:0;transform:translateY(13px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+/* No control panel, no episode number rail, no fake progress buttons. */
+.conversation-rail,.css-manual,.demo-stage-indicator,.demo-native-controls{display:none!important}
+@media(max-width:760px){.dialog-layout{display:block}.conversation-shell{height:clamp(390px,63vh,590px);min-height:390px}.conversation-stream{padding:18px 18px 12px}.dialog-layout:before{height:85%;width:85%}}
+@media(max-width:420px){.conversation-shell{height:clamp(370px,62vh,550px)}.conversation-title{padding:0 13px}.conversation-toolbar{padding:0 13px}.chat-bubble{max-width:88%;padding:11px 13px}}
+@media(prefers-reduced-motion:reduce){.conversation-stream .chat-line{animation:none;visibility:visible;opacity:1;max-height:none;margin-top:15px;transform:none}}
+</style>
+<style id="homunculus-art-direction">
+/* EDITORIAL / JAPANESE-INSPIRED EXPERIMENTAL PRINT, THIRD ITERATION */
+:root{--paper:#f6f5f0;--ink:#102342;--blue:#0458c9;--line:#a4b7d1;--serif:'Instrument Serif',Georgia,serif;--zh:'Noto Serif SC','Songti SC',serif;--mono:'DM Mono',monospace}
+html{scroll-padding-top:25px}
+body{background:#f6f5f0}
+header{position:relative;z-index:40}
+.nav{border-top:4px solid #135dcc;border-bottom:1px solid #294b7a;height:84px}
+.wordmark{font-style:italic;font-size:35px;letter-spacing:-.025em}
+.navlinks{gap:35px;letter-spacing:.04em}
+.navlinks a{padding:10px 0;position:relative}
+.navlinks a:after{content:'';position:absolute;bottom:4px;left:0;width:0;height:1px;background:var(--blue);transition:width .22s}
+.navlinks a:hover:after{width:100%}
+.issue{color:#41658a}
+.hero{min-height:760px;height:min(830px,calc(100vh - 85px));max-height:890px;border-bottom:0}
+.copy{width:58%;padding-top:clamp(60px,8vw,125px)}
+.hero .eyebrow{font-size:10px;color:#285da0;letter-spacing:.12em}
+.hero h1{font-size:clamp(105px,11.6vw,208px);margin:49px 0 32px;letter-spacing:-.061em;line-height:.81;position:relative;z-index:4}
+.hero h1:after{font-size:80px;top:-65px;color:#043dc4}
+.hero .zh{font-size:clamp(23px,2.25vw,36px);line-height:1.6;max-width:550px;position:relative;z-index:5}
+.hero .desc{font-size:13px;max-width:420px;line-height:2.1}
+.hero .art{inset:-35px -8vw -45px 24%;z-index:0;filter:saturate(1.03)}
+.art svg{height:100%;width:100%}
+.hero .actions{margin-top:45px}
+.hero .button{border-radius:0;background:#0759c3;border:1px solid #0759c3;padding:17px 25px;letter-spacing:.04em;box-shadow:6px 6px 0 #d4e1f3;transition:transform .2s,box-shadow .2s}
+.hero .button:hover{background:#063c8f;transform:translate(3px,3px);box-shadow:3px 3px 0 #a7c7ed}
+.hero .sub{text-transform:uppercase}
+.hero .fine{max-width:420px;margin-top:20px}
+/* A wholly new visual folio spread: typography and original SVG, no external image needed. */
+.folio-spread{position:relative;overflow:hidden;background:#0756bf;color:#f6f6f1;margin:0;min-height:720px;border-top:1px solid #063576;border-bottom:1px solid #043574}
+.folio-meta,.folio-bottom{position:relative;z-index:5;display:flex;justify-content:space-between;gap:20px;align-items:center;padding:23px clamp(22px,5vw,90px);border-bottom:1px solid #a9c2e18c;font:10px var(--mono);letter-spacing:.09em}
+.folio-inner{max-width:1520px;min-height:670px;margin:auto;display:grid;grid-template-columns:47% 53%;position:relative;padding:60px clamp(22px,5vw,90px) 70px}
+.folio-left{position:relative;z-index:6;padding:12px 0 0;display:flex;flex-direction:column;align-items:flex-start}
+.folio-stamp{font:11px/1.65 var(--mono);letter-spacing:.13em;border-left:2px solid #c8dcff;padding-left:14px;margin-bottom:85px;color:#d4e6fa}
+.folio-heading{font:italic clamp(84px,10vw,180px)/.8 var(--serif);letter-spacing:-.048em;position:relative;white-space:nowrap;text-shadow:0 1px 0 #0957bd}
+.folio-heading i{font-weight:400;color:#d7ebff}
+.folio-left p{font:500 18px/1.9 var(--zh);margin:42px 0 31px;color:#e9f4ff}
+.folio-cta{display:inline-flex;align-items:center;gap:50px;text-decoration:none;border:1px solid #9bb9e5;padding:14px 18px;font:10px var(--mono);letter-spacing:.05em;transition:background .2s,color .2s}
+.folio-cta:hover{background:#fff;color:#034a9c}
+.folio-art{position:absolute;right:-8%;top:-2%;width:65%;height:110%;transform:rotate(-6deg);will-change:transform;animation:folio-arrive 1.2s both;pointer-events:none}
+.folio-plate{height:100%;width:100%;filter:drop-shadow(20px 22px 0 #002c76aa)}
+.folio-cross{position:absolute;top:4%;left:18%;font:130px var(--serif);color:#e3f0ff;transform:rotate(40deg)}
+.folio-art-tag{position:absolute;bottom:15%;right:15%;font:10px/1.55 var(--mono);background:#f3f4ed;color:#144b9e;padding:14px 20px;transform:rotate(6deg)}
+.folio-art-letter{position:absolute;left:42%;top:35%;font:italic 170px/.9 var(--serif);color:#fff;mix-blend-mode:screen}
+.folio-bottom{border-top:1px solid #a9c2e18c;border-bottom:0}
+.folio-bottom b{font-size:17px;margin:0 11px}
+@keyframes folio-arrive{from{transform:translateX(60px) rotate(0);opacity:.4}to{transform:translateX(0) rotate(-6deg);opacity:1}}
+/* Make documentation feel like an illustrated book, not a dashboard. */
+.sectionline{border-top:2px solid #1d497f;padding-top:21px}
+.section h2{font-size:clamp(33px,3.5vw,56px);line-height:1.4;letter-spacing:-.01em}
+.demo{background:linear-gradient(118deg,#e7effc 0%,#f6f5f0 46%,#f0f3f5 100%);border-top:1px solid #adc3da;border-bottom:1px solid #adc3da}
+.boardcard{box-shadow:18px 20px 0 #b2ccef69,0 0 0 1px #9fb3ce;border-radius:0}
+.demo-stage-indicator button{border-radius:0;cursor:pointer;transition:background .2s,color .2s,transform .2s}
+.demo-stage-indicator button:hover{transform:translateY(-3px)}
+.controls button{cursor:pointer;transition:transform .2s}
+.controls button:hover{transform:translateY(-2px)}
+.merged-manual{background:#f6f5f0}
+.merged-manual-top{border-top:3px solid #1c5ab7}
+.merged-manual-top h2{font-style:italic;font-size:clamp(90px,10vw,150px);letter-spacing:-.045em;line-height:.9}
+.merged-side{background:#edf2fb;border-right:1px solid #b7c8de}
+.merged-side-sticky{padding-top:22px}
+.chapter{scroll-margin-top:24px;border-bottom:1px solid #b2c3d9;padding-bottom:65px}
+.chapter h2{letter-spacing:-.02em}
+.chapter .ch-head{border-bottom:1px solid #b5c5dc}
+.chapter .ch-head small{letter-spacing:.12em}
+.merged-toc-link{border-left:3px solid transparent}
+.merged-toc-link:hover,.merged-toc-link.active{border-left-color:#0a58c3;background:#dae7f8;color:#063d8b}
+.atlas{border:1px solid #90a9ce;background:#e7eef8;box-shadow:10px 10px 0 #d1dded;position:relative}
+.atlas:before{content:'H / 001';position:absolute;right:23px;bottom:10px;font:11px var(--mono);color:#91abc9}
+.atlas-node{border-radius:0!important;cursor:pointer;transition:transform .18s,box-shadow .18s,border-color .18s}
+.atlas-node:hover{transform:translate(-3px,-3px);box-shadow:4px 4px 0 #8eb6e3}
+.atlas-node:focus-visible{outline:3px solid #085cbe;outline-offset:3px}
+.blueprint-note{border-top:3px solid #1254a9;padding:30px 0 65px;margin:20px 0 40px;color:#1d3e70}
+.blueprint-side{font:10px var(--mono);letter-spacing:.09em;margin-bottom:27px;color:#2362ac}
+.blueprint-flow{display:grid;grid-template-columns:1fr 27px 1fr 27px 1fr 27px 1fr;gap:7px;align-items:center}
+.blueprint-segment{min-height:132px;background:#e8eef8;border:1px solid #b0c6e3;padding:17px 12px;display:flex;flex-direction:column;gap:7px}
+.blueprint-segment span{font:9px var(--mono);color:#2e68b1}
+.blueprint-segment strong{font:600 15px 'DM Sans',sans-serif}
+.blueprint-segment small{font:11px/1.7 'DM Sans',sans-serif;color:#7184a3}
+.blueprint-separator{text-align:center;font:20px var(--serif);color:#1c64bd}
+.blueprint-note>p{font:12px/2 'DM Sans',sans-serif;color:#637d9d;max-width:780px;margin-top:25px}
+@media(max-width:1000px){.folio-inner{grid-template-columns:54% 46%}.folio-art{right:-21%;width:81%}.folio-heading{font-size:clamp(80px,9.4vw,130px)}}
+@media(max-width:750px){
+ .hero{height:auto;min-height:900px;max-height:none}.copy{width:100%;padding-top:85px}.hero h1{font-size:clamp(84px,15vw,132px)}.hero .art{inset:240px -75px 70px -30px;opacity:.88;z-index:0}.hero .copy{position:relative;z-index:3}.hero .zh,.hero .desc,.hero .actions,.hero .fine{position:relative;z-index:5}.hero .zh{padding-top:8px}.hero .desc{max-width:340px}
+ .folio-spread{min-height:800px}.folio-meta{font-size:8px}.folio-meta span:nth-child(2){display:none}.folio-inner{display:block;min-height:725px;padding:60px 26px 40px}.folio-stamp{margin-bottom:25px}.folio-heading{font-size:clamp(95px,16vw,138px)}.folio-left p{margin-top:25px;font-size:16px}.folio-art{width:102%;right:-22%;top:290px;height:460px;opacity:.8}.folio-art-tag{font-size:8px}.folio-bottom span:nth-child(2){display:none}
+ .blueprint-flow{grid-template-columns:1fr;max-width:430px}.blueprint-separator{transform:rotate(90deg)}.blueprint-segment{min-height:90px}.merged-manual-top h2{font-size:90px}.navlinks{gap:11px}
+}
+@media(max-width:520px){
+ .hero{min-height:840px}.hero h1{font-size:clamp(63px,15vw,85px);margin-top:24px}.hero h1:after{font-size:36px;top:-28px;left:0}.hero .art{inset:235px -145px 60px -80px}.hero .zh{font-size:20px}.hero .desc{font-size:12px;max-width:275px}.hero .fine{display:none}
+ .folio-meta{padding:16px 24px}.folio-heading{font-size:clamp(78px,19vw,104px)}.folio-art{width:118%;top:300px;right:-35%;height:480px}.folio-inner{min-height:760px}.folio-left{padding-top:0}.folio-left p{font-size:15px}.folio-cta{font-size:9px;gap:23px}.folio-art-letter{font-size:140px}
+ .nav{height:68px}.navlinks a[href="#about"]{display:none}.navlinks a{font-size:9px}.issue{display:none}.wordmark{font-size:28px}
+ .merged-manual-top h2{font-size:75px}
+}
+@media(prefers-reduced-motion:reduce){.folio-art{animation:none}.hero .art *{animation:none!important}}
+
+/* final mobile polish: align counter and controls, prevent the phone composer from overlapping the last bubble */
+@media(max-width:820px){.conversation-rail{display:block}.rail-number{font-size:76px;line-height:1;display:block;margin-bottom:9px}.rail-label{margin:0 0 13px;max-width:100%;line-height:1.6}.rail-folio{display:flex;flex-direction:row;gap:14px;align-items:center;margin:0 0 22px}.rail-folio .rail-line{flex:1}.rail-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rail-track{margin:19px 0 12px}.rail-footnote{margin-top:0}}
+@media(max-width:540px){.conversation-rail{padding-top:3px}.rail-number{font-size:70px}.rail-label{font-size:9px}.hero .phonefeed{max-height:45%}.hero .phonefeed span:nth-child(n+3){display:none}.hero .phoneinput{height:18px;line-height:18px;white-space:nowrap;overflow:hidden;background:#f4f7fc}.hero .phoneheader{line-height:1.15}.hero .phone{right:1%!important}}
+</style>
+<style id="atlas-autoplay-accessible">
+/* Autoplay is CSS-only: the iOS HTML preview may disable JavaScript entirely. */
+.demo{--cycle:20s}
+.demo .demogrid{align-items:center}
+.demo .stage-panel,.demo .stage-description{display:block!important}
+.demo .boardcard{position:relative;overflow:hidden;min-height:335px}
+.demo .stage-panel{position:absolute;inset:20px;opacity:0;visibility:hidden;pointer-events:none;transform:none!important;animation:scene-cycle var(--cycle) steps(1,end) infinite!important}
+.demo .stage-description{position:absolute;inset:0;opacity:0;visibility:hidden;animation:scene-cycle var(--cycle) steps(1,end) infinite!important}
+.demo .step{position:relative;min-height:98px;padding:18px 0;border-top:1px solid #a9bed8}
+.demo .stage-1{animation-name:scene-1!important}
+.demo .stage-2{animation-name:scene-2!important}
+.demo .stage-3{animation-name:scene-3!important}
+.demo .stage-4{animation-name:scene-4!important}
+@keyframes scene-1{0%,24.9%{opacity:1;visibility:visible}25%,99.9%{opacity:0;visibility:hidden}100%{opacity:1;visibility:visible}}
+@keyframes scene-2{0%,24.9%{opacity:0;visibility:hidden}25%,49.9%{opacity:1;visibility:visible}50%,100%{opacity:0;visibility:hidden}}
+@keyframes scene-3{0%,49.9%{opacity:0;visibility:hidden}50%,74.9%{opacity:1;visibility:visible}75%,100%{opacity:0;visibility:hidden}}
+@keyframes scene-4{0%,74.9%{opacity:0;visibility:hidden}75%,99.9%{opacity:1;visibility:visible}100%{opacity:0;visibility:hidden}}
+.autoplay-indicator{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:30px 0 14px}
+.auto-segment{min-width:0}
+.auto-segment span{display:block;font:9px/1.6 'DM Mono',monospace;color:#406b9d;white-space:nowrap}
+.auto-segment i{display:block;position:relative;height:2px;margin-top:10px;background:#c0d0e4;overflow:hidden}
+.auto-segment i:after{content:'';position:absolute;inset:0;background:#075dbe;transform-origin:left;transform:scaleX(0);animation:indicator var(--cycle) linear infinite}
+.auto-2 i:after{animation-delay:calc(var(--cycle) * -.75)}
+.auto-3 i:after{animation-delay:calc(var(--cycle) * -.5)}
+.auto-4 i:after{animation-delay:calc(var(--cycle) * -.25)}
+@keyframes indicator{0%{transform:scaleX(0)}25%{transform:scaleX(1)}25.01%,100%{transform:scaleX(0)}}
+.autoplay-pause{display:inline-flex;gap:9px;align-items:center;font:11px 'DM Mono',monospace;cursor:pointer;color:#245a9b;margin:0 0 20px;padding:7px 0}
+.autoplay-pause input{appearance:auto;accent-color:#0956b8;width:15px;height:15px;margin:0}
+/* CSS :has makes Pause possible in modern browsers; autoplay works without it. */
+.demo:has(#pause-motion:checked) .stage-panel,
+.demo:has(#pause-motion:checked) .stage-description,
+.demo:has(#pause-motion:checked) .auto-segment i:after{animation-play-state:paused!important}
+.atlas-heading{align-items:flex-start}
+.atlas-jump{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.atlas-jump a{padding:9px 11px;text-decoration:none;border:1px solid #a8beda;background:#f9fbff;color:#1c579e;font:10px 'DM Mono',monospace;min-height:35px}
+.atlas-jump a:active{background:#0c5cc1;color:#fff}
+.atlas-node{cursor:default;transform:none!important}
+.atlas-node:hover{transform:none!important}
+.node-explainer{border-top:1px solid #d8e4f1;margin:5px 0 0;padding-top:8px;font:11px/1.75 'DM Sans',sans-serif!important;color:#48688e!important}
+.atlas-band{scroll-margin-top:18px}
+/* Avoid off-screen rotated labels and iPhone viewport overflow. */
+.merged-content,.chapter-body,.atlas,.atlas-flow{min-width:0;max-width:100%}
+.atlas-flow.horizontal .atlas-node{overflow-wrap:anywhere}
+.atlas-flow.horizontal .atlas-node strong{overflow-wrap:anywhere}
+@media(max-width:760px){.demo .boardcard{min-height:335px}.demo .stage-panel{inset:17px}.demo .stage-panel .msgs{min-height:220px}.atlas-heading{display:block}.atlas-jump{margin:18px 0 0}.atlas-lanes{grid-template-columns:1fr}.atlas-flow.horizontal{flex-direction:column}.atlas-flow.horizontal .connector{height:22px;justify-content:center;transform:rotate(90deg)}.atlas-legend{gap:8px 15px}.auto-segment span{font-size:8px;white-space:normal}.hero .phone{max-width:24vw;height:auto;aspect-ratio:170/320}}
+@media(max-width:440px){.autoplay-indicator{gap:5px}.auto-segment span{font-size:7px}.demo .boardcard{width:100%;min-height:320px}.demo .stage-panel{inset:12px}.atlas{padding:12px}.atlas-jump a{font-size:9px;padding:8px}}
+@media(prefers-reduced-motion:reduce){.demo .stage-panel,.demo .stage-description,.auto-segment i:after{animation:none!important;opacity:0!important;visibility:hidden!important}.demo .stage-1{opacity:1!important;visibility:visible!important}}
+
+/* final mobile polish: align counter and controls, prevent the phone composer from overlapping the last bubble */
+@media(max-width:820px){.conversation-rail{display:block}.rail-number{font-size:76px;line-height:1;display:block;margin-bottom:9px}.rail-label{margin:0 0 13px;max-width:100%;line-height:1.6}.rail-folio{display:flex;flex-direction:row;gap:14px;align-items:center;margin:0 0 22px}.rail-folio .rail-line{flex:1}.rail-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rail-track{margin:19px 0 12px}.rail-footnote{margin-top:0}}
+@media(max-width:540px){.conversation-rail{padding-top:3px}.rail-number{font-size:70px}.rail-label{font-size:9px}.hero .phonefeed{max-height:45%}.hero .phonefeed span:nth-child(n+3){display:none}.hero .phoneinput{height:18px;line-height:18px;white-space:nowrap;overflow:hidden;background:#f4f7fc}.hero .phoneheader{line-height:1.15}.hero .phone{right:1%!important}}
+</style><style id="sequence-visibility-repair">
+/* Final cascade isolation. Restricted iOS preview may not execute any JS. */
+html:not(.insertion-ready) #conversation-stream .chat-line{animation-name:entire-message-appear!important;animation-duration:.01s!important;animation-timing-function:steps(1,end)!important;animation-fill-mode:both!important;animation-iteration-count:1!important;transition:none!important}
+html.insertion-ready #conversation-stream .chat-line{animation:none!important;visibility:visible!important;opacity:1!important;max-height:none!important;margin-top:14px!important;overflow:visible!important}
+html.insertion-ready #conversation-stream .chat-line.inserted{animation:new-bubble .42s ease-out both!important}
+#conversation-stream .chat-bubble{height:auto!important;min-height:0!important;max-height:none!important;white-space:normal!important;word-break:break-word!important;display:block!important}
+#conversation-stream .system-note{white-space:normal!important}
+</style><style id="dialogue-click-fix">
+html.demo-js-running #conversation-stream .chat-line { display:flex!important;visibility:visible!important;opacity:1!important;max-height:none!important;min-height:0!important;margin:0!important;overflow:visible!important;transform:none!important;animation:none!important;transition:none!important;pointer-events:auto!important }
+html.demo-js-running #conversation-stream .chat-line.inserted { animation: dialogue-card-enter .46s cubic-bezier(.2,.72,.24,1) both!important }
+html.demo-js-running #conversation-stream .chat-bubble,
+html.demo-js-running #conversation-stream .chat-caption,
+html.demo-js-running #conversation-stream .system-note { opacity:1!important;visibility:visible!important;animation:none!important;transform:none!important;max-height:none!important;overflow:visible!important }
+@keyframes dialogue-card-enter {from {opacity:0;transform:translateY(14px) scale(.985)} to {opacity:1;transform:translateY(0) scale(1)}}
+#conversation-shell {cursor:pointer;touch-action:pan-y;}
+#conversation-shell:focus-visible {outline:2px solid #246bc0;outline-offset:4px}
+@media (prefers-reduced-motion:reduce) {html.demo-js-running #conversation-stream .chat-line.inserted {animation:none!important}}
+</style><style id="conversation-layout-fix">
+/* Chat lines must retain their intrinsic height inside a scrollable flex column.
+   The previous flex-shrink:1 compressed all eight rows into the fixed viewport,
+   while overflow:visible left their text painting over adjacent rows. */
+#conversation-stream {display:flex!important;flex-direction:column!important;overflow-y:auto!important;overflow-x:hidden!important;min-height:0!important;scroll-behavior:auto!important;align-content:normal!important;}
+#conversation-stream > .stream-topline,
+#conversation-stream > .chat-line,
+#conversation-stream > .stream-bottom-spacer {flex:0 0 auto!important;min-height:min-content!important;}
+html.demo-js-running #conversation-stream > .chat-line {
+  position:relative!important;display:flex!important;flex-direction:column!important;
+  flex:0 0 auto!important;height:auto!important;min-height:min-content!important;
+  max-height:none!important;overflow:visible!important;
+  opacity:1!important;visibility:visible!important;transform:none!important;
+  margin:14px 0 0!important;padding:0!important;animation:none!important;
+  transition:none!important;gap:6px!important;
+}
+html.demo-js-running #conversation-stream > .chat-line.inserted {animation:dialogue-card-enter .34s ease-out both!important;}
+#conversation-stream .chat-caption {position:static!important;display:block!important;flex:0 0 auto!important;line-height:1.5!important;}
+#conversation-stream .chat-bubble {position:static!important;display:block!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;white-space:normal!important;line-height:1.75!important;word-break:break-word!important;}
+#conversation-stream .system-note {position:static!important;min-height:20px!important;}
+.conversation-title,.conversation-toolbar,.chat-composer {flex-shrink:0!important;}
+@media(max-width:540px){#conversation-stream > .chat-line {max-width:100%!important;}}
+@media(prefers-reduced-motion:reduce){html.demo-js-running #conversation-stream > .chat-line.inserted{animation:none!important}}
+
+/* Source and handoff */
+.hero .actions {flex-wrap:wrap;gap:16px;margin-bottom:14px}.hero .actions .button{gap:18px;align-items:center;min-height:46px;font-weight:500;letter-spacing:.035em}.hero .actions .sub{display:inline-block;padding:10px 0;white-space:nowrap}.source-address{position:relative;z-index:7;display:flex;flex-direction:column;gap:4px;max-width:390px;margin-top:18px;padding:11px 0 14px;border-top:1px solid #8ca9ca;border-bottom:1px solid #8ca9ca}.source-address span{font:9px/1.4 var(--mono);color:#477cb2;letter-spacing:.08em}.source-address a{font:clamp(11px,1.15vw,13px)/1.65 var(--mono);color:#193f74;text-decoration:none;overflow-wrap:anywhere}.source-address a:hover{text-decoration:underline;text-underline-offset:4px}.link-arrow{width:9px;height:9px;display:inline-block;position:relative;border-top:1.5px solid currentColor;border-right:1.5px solid currentColor;transform:translateY(2px)}.link-arrow:before{content:'';position:absolute;width:13px;top:3px;left:-3px;border-top:1.5px solid currentColor;transform:rotate(-45deg);transform-origin:right center}.ai-handoff{border:1px solid #89a8d0;background:#eaf1fb;padding:24px 25px;margin:34px 0 45px}.ai-handoff-head{display:flex;justify-content:space-between;align-items:center;gap:20px}.ai-handoff-head span{font:10px var(--mono);letter-spacing:.06em;color:#1d60b3}.ai-handoff-head a{font:10px var(--mono);color:#163e75;text-decoration:none}.ai-handoff>p{font:13px/1.9 var(--sans);color:#516f94;margin:15px 0}.ai-prompt{background:#f8fbff;border-left:3px solid #1664c6;padding:16px 18px;font:12px/2 var(--sans);color:#284b7c;user-select:text;overflow-wrap:anywhere}.ai-handoff-actions{margin-top:16px;display:flex;align-items:center;gap:17px}.ai-handoff-actions button{border:1px solid #1f5fae;background:#165cbd;color:white;padding:11px 16px;font:10px var(--mono);cursor:pointer;letter-spacing:.04em}.ai-handoff-actions button:hover{background:#11478f}.ai-handoff-actions span{font:10px/1.7 var(--sans);color:#627b9c}
+/* Native vector workflow diagram: one glance, two routes. */
+.flow-figure{margin:25px 0 40px;border:1px solid #a4bad5;background:#f3f6fc;padding:21px 20px 16px;max-width:100%;min-width:0}.flow-caption{margin-bottom:16px}.flow-caption span{font:10px var(--mono);color:#1a63b8;letter-spacing:.075em}.flow-caption strong{font:500 clamp(17px,2vw,22px)/1.7 'Noto Serif SC','Songti SC',serif;display:block;margin:8px 0 4px;color:#213f66}.flow-caption p{font:12px/1.8 var(--sans);color:#637b9d;max-width:610px;margin:0}.flow-surface{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;background:#eef4fc;border-top:1px solid #b2c5df;border-bottom:1px solid #b2c5df}.flow-svg{display:block;width:100%;min-width:690px;height:auto}.flow-scroll-hint{font:9px var(--mono);color:#7c93b1;margin:0 0 8px;display:none}.fnode{fill:#fff;stroke:#9cb7da;stroke-width:1.5}.fnode-entry{stroke:#82a6cf}.fnode-router{fill:#174c95;stroke:#174c95}.fnode-api{stroke:#438bd9;stroke-width:2}.fnode-cc{stroke:#9c89c4;stroke-width:2}.fnode-conv{stroke:#315fa1;stroke-width:2}.fnode-sync{fill:#fff8ee;stroke:#c8a574;stroke-width:1.6}.fnode-data{fill:#eef2f7;stroke:#9aaec4;stroke-width:1.6}.flow-lane-bg{fill:#f9fbff;stroke:#b9cde7;stroke-width:1.25}.sv-id,.sv-micro,.sv-foot{font-family:'DM Mono',monospace;fill:#547397;font-size:11px;letter-spacing:.6px}.sv-id{font-size:11px;letter-spacing:1px}.sv-name{font:600 19px 'DM Sans',sans-serif;fill:#1f406d}.sv-small{font-size:16px}.sv-desc{font:12px 'Noto Sans SC','DM Sans',sans-serif;fill:#607e9d}.sv-foot{font-size:11px;letter-spacing:0}.sv-id-inverse,.sv-inverse{fill:#f5faff!important}.sv-api-label{fill:#1a65bc}.sv-cc-label{fill:#7963a0}.flow-wire{fill:none;stroke:#42658e;stroke-width:1.7}.api-wire{stroke:#176ac9}.cc-wire{stroke:#8871b4}.sync-wire{stroke:#ad8555;stroke-dasharray:5 5;stroke-width:1.65}.data-wire{stroke:#7c96b5}.flow-legend{display:flex;flex-wrap:wrap;gap:8px 19px;margin:17px 0;color:#5b7393;font:10px/1.6 var(--mono)}.flow-legend span{display:flex;gap:7px;align-items:center}.flow-dot{display:inline-block;width:8px;height:8px;background:#4278bb}.fd-api{background:#176ac9}.fd-cc{background:#8871b4}.fd-sync{background:#ad8555}.fd-data{background:#7c96b5}.flow-source{font:11px/1.9 var(--sans);color:#6981a1;margin:9px 0 0}.flow-source a{color:#205ca7;overflow-wrap:anywhere}
+@media(max-width:820px){.flow-figure{padding:15px 12px 12px}.flow-svg{min-width:780px}.flow-scroll-hint{display:block}.ai-handoff{padding:20px 17px}.ai-handoff-head{flex-wrap:wrap;gap:10px}}
+@media(max-width:520px){.hero .actions{gap:11px}.hero .actions .button{padding:12px 15px;font-size:10px;gap:10px}.hero .actions .sub{font-size:10px}.source-address{margin-top:11px;max-width:310px}.hero .source-address a{font-size:11px}.ai-handoff-actions{align-items:flex-start;flex-direction:column;gap:9px}.ai-prompt{font-size:11px}.flow-surface{margin-right:-2px}.navlinks{gap:8px}.navlinks a{font-size:8px}}
+</style>
+<style id="hero-mobile-layout-fix">
+/* Mobile hero: the copy and mockup occupy separate rows. No overlap, regardless
+   of how many lines the Chinese description or source link wraps into. */
+@media (max-width: 750px) {
+  .hero {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch;
+    height: auto !important;
+    min-height: 0 !important;
+    padding-bottom: 112px !important;
+    overflow: visible;
+  }
+  .hero .copy {
+    position: relative !important;
+    flex: 0 0 auto;
+    width: 100% !important;
+    padding-top: 60px !important;
+    z-index: 5;
+  }
+  .hero .art {
+    inset: 420px -90px 15px -45px !important;
+    opacity: .82;
+    z-index: 0;
+  }
+  .hero .desktop {
+    position: relative !important;
+    flex: 0 0 auto;
+    top: auto !important;
+    bottom: auto !important;
+    right: auto !important;
+    left: 1% !important;
+    width: 91% !important;
+    margin: 94px 0 0 !important;
+    z-index: 5;
+  }
+  .hero .phone {
+    position: absolute !important;
+    right: -1% !important;
+    bottom: 45px !important;
+    z-index: 7;
+  }
+  .hero .desc {
+    position: relative;
+    z-index: 6;
+    max-width: min(100%, 440px) !important;
+    padding: 4px 8px 4px 0;
+    background: linear-gradient(90deg, rgba(247,247,243,.96), rgba(247,247,243,.86) 80%, transparent);
+  }
+  .hero .actions, .hero .source-address {position:relative;z-index:6;}
+  .hero .source-address {background: rgba(247,247,243,.94);}
+}
+@media (max-width: 520px) {
+  .hero .copy {padding-top: 48px !important;}
+  .hero .desktop {margin-top: 85px !important;width: 91% !important;left: 1% !important;}
+  .hero .phone {right: -1% !important;bottom: 38px !important;}
+  .hero .art {inset: 410px -100px 0 -55px !important;}
+  .hero .desc {max-width: 100% !important;}
+  .hero .actions {margin-top: 24px;}
+  .hero .actions .button {font-size: 11px;}
+  .hero .source-address {max-width: 100%;}
+}
+</style>
+</head>
+<body>
+<header class="wrap"><div class="nav"><a class="wordmark" href="#top">homunculus</a><nav class="navlinks"><a href="#demo">演示</a><a href="#guide">教程</a><a href="https://github.com/yerph/homunculus" target="_blank" rel="noopener noreferrer">GITHUB</a></nav><span class="issue">— VOL. 01 / 2026</span></div></header>
+<main id="top"><div class="wrap"><section class="hero"><div aria-hidden="true" class="art"><svg preserveaspectratio="xMidYMid slice" viewbox="0 0 900 780" xmlns="http://www.w3.org/2000/svg"><defs><pattern height="10" id="dots" patternunits="userSpaceOnUse" width="10"><circle cx="2" cy="2" fill="#17365c" opacity=".5" r="1.2"></circle></pattern><pattern height="14" id="hatch" patterntransform="rotate(33)" patternunits="userSpaceOnUse" width="14"><path d="M0 0V14" opacity=".4" stroke="#103f83" stroke-width="1.4"></path></pattern><clippath id="cut"><path d="M242 70L770 -22 934 157 830 655 379 805 109 586Z"></path></clippath></defs><g class="layer one" clip-path="url(#cut)"><path d="M115 230L870 45 915 650 340 760Z" fill="#1569d9"></path><path d="M390 95L810 30 730 705 200 770Z" fill="#7bb6f0"></path><path d="M210 395L920 164 855 350 90 614Z" fill="#f7f7f3"></path><path d="M100 645L890 393 860 770 200 800Z" fill="#c9def6"></path></g><g class="layer two" fill="none" opacity=".85" stroke="#173557" stroke-width="2.5"><path d="M290 100L420 680 850 575 720 2"></path><path d="M370 79L510 655M458 60L602 627M542 40L695 602M625 19L782 583"></path><path d="M287 175L744 66M305 255L767 145M322 335L787 227M340 416L803 311M360 503L824 393M380 584L840 478"></path><path d="M290 100L850 575M720 2L420 680" opacity=".4"></path></g><g class="layer three"><path d="M210 500L800 280 851 445 268 656Z" fill="url(#dots)"></path><path d="M102 655L880 425 905 540 139 773Z" fill="url(#hatch)"></path><path d="M720 30L900 80 843 340 758 290Z" fill="#f7f7f3"></path><path d="M0 540L225 481 281 666 0 728Z" fill="#1c61bf"></path><path d="M95 590L235 547" stroke="#fff" stroke-width="4"></path><path d="M85 622L243 574" stroke="#fff" stroke-width="2"></path></g><g fill="none" stroke="#f7f7f3" stroke-width="6"><path d="M480 0L430 770M700 0L650 780M245 150L910 410"></path><path d="M500 100L745 0 840 350" stroke-width="2"></path></g><g fill="none" stroke="#1465d9" stroke-width="1.5"><path class="line" d="M24 172C155 45 300 130 430 28S703 -45 900 45"></path><path d="M38 717L899 460M37 724L905 469" opacity=".6"></path><circle cx="250" cy="160" r="35" stroke-dasharray="2 8"></circle><path d="M238 160h24m-12-12v24"></path></g><g fill="#1465d9"><circle cx="430" cy="28" r="4"></circle><circle cx="250" cy="160" r="3"></circle></g></svg><div class="annotation">ATLAS / 001<br/>CONVERSATION<br/>WITHOUT BORDERS</div><div class="index">01</div></div><div class="copy"><div class="eyebrow">独立 AI 对话系统 / 01</div><h1>homunculus</h1><p class="zh">让 Claude Code 与模型 API<br/>在同一个空间相遇。</p><p class="desc">保留对话的前情，连接不同的模型，让每一次切换都自然、连续、可追溯。一个属于自己的多入口 AI 对话空间。</p><div class="actions"><a class="button" href="https://github.com/yerph/homunculus" target="_blank" rel="noopener noreferrer">查看 GitHub 仓库 <span class="link-arrow" aria-hidden="true"></span></a><a class="sub" href="#demo">查看交互演示</a></div><div class="source-address"><span>项目源码仓库 / 001</span><a href="https://github.com/yerph/homunculus" target="_blank" rel="noopener noreferrer">github.com/yerph/homunculus</a></div><div class="fine"><span>源码可查看</span><span>非商业许可</span><span>自行部署</span></div></div><div class="desktop"><div class="bar"><span class="dots"><i></i><i></i><i></i></span>homunculus<span class="small">桌面 / 01</span></div><div class="app"><div class="side"><div class="small">会话列表</div><div>项目</div><div class="on">模式切换</div><div>笔记</div><div>归档</div></div><div class="screen"><div class="screenhead"><span class="small">同一段对话</span><div class="tabs"><button class="active" type="button" id="cc" aria-pressed="true">CC</button><button type="button" id="api" aria-pressed="false">API</button></div></div><div class="msgs" id="heromsgs"><div class="msg me">刚才那个项目，我们继续。</div><div class="msg">好，我记得我们正在整理它的结构。</div></div><div class="status"><span id="herostatus"> CC 会话 / 已连接</span><span>界面预览</span></div></div></div></div><div class="phone"><div class="phoneheader">homunculus<small>私人对话</small></div><div class="phonetabs">CC    /    API</div><div class="phonefeed" id="phonefeed"><span>回到 CC 继续。</span><span>当前会话</span><span>好的，继续这个任务。</span></div><div class="phoneinput">输入消息… <b>查看</b></div></div></section></div>
+<div class="ticker"><span>CLAUDE CODE</span><i>·</i><span>DIRECT API</span><i> / VIEW</i><span>CONTEXT CONTINUITY</span><i>·</i><span>YOUR OWN SPACE</span><i> / VIEW</i><span>CLAUDE CODE</span><i>·</i><span>DIRECT API</span></div>
+<section aria-label="homunculus 视觉章节" class="folio-spread" id="folio">
+<div class="folio-meta"><span>PLATE NO. 00—04</span><span>STUDIES IN CONTINUITY</span><span>HOMUNCULUS / 2026</span></div>
+<div class="folio-inner">
+<div class="folio-left">
+<div class="folio-stamp">AN INTERFACE<br/>FOR TWO WORLDS</div>
+<div class="folio-heading">A place<br/>to <i>return.</i></div>
+<p>同一个窗口，两条路径。<br/>不把每一次切换，都变成一次告别。</p>
+<a class="folio-cta" href="#demo">EXPLORE THE CONVERSATION <span> / VIEW</span></a>
+</div>
+<div aria-hidden="true" class="folio-art">
+<svg class="folio-plate" viewbox="0 0 720 670" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<pattern height="18" id="folio-grid" patternunits="userSpaceOnUse" width="18"><path d="M18 0H0V18" fill="none" opacity=".6" stroke="#114993" stroke-width=".7"></path></pattern>
+<pattern height="11" id="folio-dot" patternunits="userSpaceOnUse" width="11"><circle cx="1.8" cy="1.8" fill="#073e93" r="1.5"></circle></pattern>
+<clippath id="folio-cut"><path d="M84 29 590 0 696 132 611 536 163 647 10 481Z"></path></clippath>
+<lineargradient id="folio-shine" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#b9dcff"></stop><stop offset="1" stop-color="#4f91ea"></stop></lineargradient>
+</defs>
+<path d="M0 77 636 0 717 463 130 670Z" fill="#e0ebff"></path>
+<g clip-path="url(#folio-cut)">
+<path d="M-30 46 750-80 740 688-80 748Z" fill="#0750bb"></path>
+<path d="M-50 230 720 50 772 265-20 470Z" fill="url(#folio-shine)"></path>
+<path d="M35 350 690 80 748 281 90 531Z" fill="#fbfaf6"></path>
+<path d="M62 480 750 206 755 411 105 640Z" fill="url(#folio-grid)"></path>
+<path d="M20 510 700 326 724 454 70 670Z" fill="url(#folio-dot)"></path>
+<path d="M230-80 420 745M446-66 624 690" fill="none" stroke="#faf6eb" stroke-width="13"></path>
+<path d="M4 161 706 392M-30 304 680 544" fill="none" stroke="#0c3a88" stroke-width="7"></path>
+<path d="M-50 68 650 555M84-40 734 430" fill="none" stroke="#fff" stroke-width="1.5"></path>
+</g>
+<path d="M39 121 676 34" stroke="#0c2345" stroke-dasharray="8 12" stroke-width="2"></path>
+<circle cx="468" cy="290" fill="none" r="133" stroke="#f7f7f3" stroke-width="2"></circle>
+<circle cx="468" cy="290" fill="none" r="92" stroke="#f7f7f3" stroke-dasharray="4 9"></circle>
+<path d="M468 139V446M320 290h298" stroke="#f7f7f3" stroke-width="1.5"></path>
+<circle cx="468" cy="290" fill="#f7f7f3" r="11"></circle>
+<path d="M63 590 648 421" stroke="#fff" stroke-width="4"></path>
+</svg>
+<span aria-hidden="true" class="folio-cross"><svg role="presentation" viewbox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50 4V96M4 50H96M17 17L83 83M83 17L17 83" fill="none" stroke="#e9f5ff" stroke-width="13"></path></svg></span>
+<span class="folio-art-tag">FIG. 01<br/>THE CONVERSATION<br/>DOES NOT RESET</span>
+<span class="folio-art-letter">h.</span>
+</div>
+</div>
+<div class="folio-bottom"><span>CLAUDE CODE <b> / </b> DIRECT API</span><span>ORIGINAL / VECTOR COMPOSITION</span><span>SCROLL FOR DETAILS  / NEXT</span></div>
+</section>
+<section class="section demo" id="demo"><div class="wrap">
+<div class="sectionline"><span>01 — A CONVERSATION IN MOTION</span><span>LIVE SEQUENCE / INTERACTIVE PREVIEW</span></div>
+<div class="dialog-intro"><div><span class="serial-kicker">SEQUENCE / 001—008</span><h2>一扇窗口，<br><i>一段延续的对话。</i></h2></div><p>聊天从空白窗口开始，消息依次进入对话。模式从 Claude Code 切换到 Direct API，再回到 CC；先前的消息保留在同一条会话里。在浏览器中可以点击窗口推进；点击聊天窗口可以立即弹出下一条消息；窗口也会自动播放。</p></div>
+<div class="dialog-layout"><div class="conversation-shell" id="conversation-shell" role="region" aria-label="可点击推进的模拟聊天窗口">
+<div class="conversation-title"><div class="window-dots" aria-hidden="true"><i></i><i></i><i></i></div><span>homunculus <small>/ CONTINUOUS SESSION</small></span><span class="demo-window-index">DESK / 01</span></div>
+<div class="conversation-toolbar"><div class="live-badge"><i></i><span id="live-mode">CLAUDE CODE</span></div><div class="conv-mode-tabs" aria-hidden="true"><span class="current" id="demo-cc-tab">CC</span><span id="demo-api-tab">API</span></div></div>
+<div class="conversation-stream" id="conversation-stream" aria-label="自动播放中的示例聊天记录">
+<div class="stream-topline"><span>CONVERSATION / 001</span><span id="stream-counter">AUTO / SEQUENCE</span></div>
+<div class="chat-line user-line" id="message-1" data-i="0" data-mode="cc" style="--i:0"><span class="chat-caption">YOU / 14:07</span><div class="chat-bubble">刚才那个项目，我们继续吧。</div></div>
+<div class="chat-line assistant-line" id="message-2" data-i="1" data-mode="cc" style="--i:1"><span class="chat-caption">CLAUDE CODE</span><div class="chat-bubble">好，我记得我们正在整理它的整体架构。</div></div>
+<div class="chat-line system-line" id="message-3" data-i="2" data-mode="api" style="--i:2"><div class="system-note"><span class="line-dot"></span>SWITCHED TO DIRECT API <span class="line-dot"></span></div></div>
+<div class="chat-line user-line" id="message-4" data-i="3" data-mode="api" style="--i:3"><span class="chat-caption">YOU / 14:08</span><div class="chat-bubble">那我们换个模型继续，把首页做得更有设计感。</div></div>
+<div class="chat-line assistant-line" id="message-5" data-i="4" data-mode="api" style="--i:4"><span class="chat-caption">DIRECT API</span><div class="chat-bubble">可以。延续刚才的构想：蓝白拼贴，实验性排版，还有真实的聊天动效。</div></div>
+<div class="chat-line system-line" id="message-6" data-i="5" data-mode="cc" style="--i:5"><div class="system-note"><span class="line-dot"></span>RETURNED TO CLAUDE CODE <span class="line-dot"></span></div></div>
+<div class="chat-line user-line" id="message-7" data-i="6" data-mode="cc" style="--i:6"><span class="chat-caption">YOU / 14:10</span><div class="chat-bubble">我们回来了。还记得刚才改到哪里吗？</div></div>
+<div class="chat-line assistant-line" id="message-8" data-i="7" data-mode="cc" style="--i:7"><span class="chat-caption">CLAUDE CODE</span><div class="chat-bubble">记得。我们决定保留蓝白拼贴，把四幕展示改成一段连续弹出的对话。</div></div>
+<div class="stream-bottom-spacer"></div>
+</div>
+<div class="chat-composer"><span>SIMULATED CONVERSATION / AUTO</span><span class="composer-send" aria-hidden="true"></span></div>
+</div>
+</div>
+<div class="dialog-bottom"><span>CONTINUITY / 01</span><span>THE DEMO USES LOCAL SIMULATED MESSAGES ONLY</span></div>
+</div></section>
+</main><section class="merged-manual" id="guide"><div class="merged-shell"><div class="merged-manual-top"><span>02 / THE INTEGRATED FIELD GUIDE</span><h2>Field guide.</h2><p>一整页可翻阅的系统图鉴。查看消息如何在 CC 与 API 之间传递，再沿着章节把自己的 homunculus 搭建起来。</p></div><div class="ai-handoff"><div class="ai-handoff-head"><span>HANDOFF / INSTALL WITH YOUR AI</span><a href="https://github.com/yerph/homunculus" target="_blank" rel="noopener noreferrer">SOURCE REPOSITORY <i class="link-arrow" aria-hidden="true"></i></a></div><p>把仓库地址交给 CC、Codex 或其他能够阅读代码的 AI，让它以实际 README 和源码为准协助部署。</p><div class="ai-prompt" id="ai-install-text">请阅读 GitHub 仓库 https://github.com/yerph/homunculus 的 README.md、项目目录和相关文档，以仓库实际代码为准，结合我的环境逐步协助部署。请先检查依赖和现有环境，不要直接覆盖我已有的服务、配置或数据。</div><div class="ai-handoff-actions"><button type="button" id="copy-ai-prompt">复制给你的 AI</button><span id="copy-ai-status" role="status" aria-live="polite">也可以直接选择并复制上方文字</span></div></div><div class="merged-reader"><aside class="merged-side"><div class="merged-side-sticky"><div class="merged-small">INDEX / CONTENTS</div><label><input aria-label="搜索教程章节" id="merged-search" placeholder="搜索教程章节" type="search"/></label><nav><a class="merged-toc-link" href="#overview"><span>01</span>项目概览</a><a class="merged-toc-link" href="#modules"><span>02</span>模块与目录</a><a class="merged-toc-link" href="#sync"><span>03</span>CC  /  API 上下文衔接</a><a class="merged-toc-link" href="#compress"><span>04</span>API 上下文压缩</a><a class="merged-toc-link" href="#requirements"><span>05</span>安装前提</a><a class="merged-toc-link" href="#install"><span>06</span>一步一步安装</a><a class="merged-toc-link" href="#custom"><span>07</span>自定义与个性化</a><a class="merged-toc-link" href="#security"><span>08</span>运行数据与维护</a><a class="merged-toc-link" href="#faq"><span>09</span>常见问题与排查</a><a class="merged-toc-link" href="#license"><span>10</span>许可证</a></nav></div></aside><div class="merged-content"><details class="merged-mobile-toc"><summary>展开教程目录 / INDEX</summary><nav><a class="merged-toc-link" href="#overview"><span>01</span>项目概览</a><a class="merged-toc-link" href="#modules"><span>02</span>模块与目录</a><a class="merged-toc-link" href="#sync"><span>03</span>CC  /  API 上下文衔接</a><a class="merged-toc-link" href="#compress"><span>04</span>API 上下文压缩</a><a class="merged-toc-link" href="#requirements"><span>05</span>安装前提</a><a class="merged-toc-link" href="#install"><span>06</span>一步一步安装</a><a class="merged-toc-link" href="#custom"><span>07</span>自定义与个性化</a><a class="merged-toc-link" href="#security"><span>08</span>运行数据与维护</a><a class="merged-toc-link" href="#faq"><span>09</span>常见问题与排查</a><a class="merged-toc-link" href="#license"><span>10</span>许可证</a></nav></details><section class="chapter" id="overview"><div class="ch-head"><small>CHAPTER 01 — OVERVIEW</small><h2>项目概览</h2></div><div class="chapter-body">
+<p>homunculus 是一套可自行部署的多渠道 AI companion 系统，支持 <strong>Claude Code（CC）模式</strong>与<strong>模型 API 模式</strong>。两种模式能够在网页端切换；在启用同步选项时，同一对话窗口的前情可以衔接。</p>
+
+<h3>系统结构</h3>
+<figure class="flow-figure" id="system-flow"><figcaption class="flow-caption"><span>ARCHITECTURE / 01</span><strong>消息如何走完一次对话</strong><p>同一个聊天窗口，两条执行路径。虚线表示可选的上下文同步，不是每次切换都会发起 CC 请求。</p></figcaption><div class="flow-scroll-hint">FLOW MAP / 横向滑动可查看完整链路</div><div class="flow-surface"><svg class="flow-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 685" role="img" aria-labelledby="flowTitle flowDesc"><title id="flowTitle">homunculus CC 与 API 系统流程架构图</title><desc id="flowDesc">Browser 经 HTTPS 网关抵达 chat-server，左侧分为 API Provider、Model API 和 Streaming Response，右侧分为 CC Hub、tmux、Claude Code 和 Web Channel MCP，两条路径回复统一显示在会话界面。可选的同步收件箱只在下一条 CC 消息时提供尚未交付的 API 前情。会话和摘要写入 chat-server/data，CC 会话记录保存在独立的 JSONL。</desc>
+<defs><pattern id="fgrid" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M 26 0 L 0 0 0 26" fill="none" stroke="#a5bbd8" stroke-opacity=".17" stroke-width="1"/></pattern><marker id="flowArrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9" fill="none" stroke="#385c8e" stroke-width="1.4"/></marker><marker id="apiArrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9" fill="none" stroke="#1568d0" stroke-width="1.5"/></marker><marker id="ccArrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9" fill="none" stroke="#846aa8" stroke-width="1.5"/></marker><marker id="syncArrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9" fill="none" stroke="#b28b53" stroke-width="1.4"/></marker></defs>
+<rect width="1050" height="685" fill="url(#fgrid)"/><text x="35" y="34" class="sv-micro">01 / REQUEST ENTRY</text><text x="35" y="195" class="sv-micro">02 / EXECUTION PATHS</text><text x="35" y="504" class="sv-micro">03 / CONTINUITY + DATA</text>
+<!-- entry -->
+<rect x="64" y="60" width="248" height="90" class="fnode fnode-entry"/><text x="83" y="82" class="sv-id">CLIENT / BROWSER / PWA</text><text x="83" y="110" class="sv-name">Chat Interface</text><text x="83" y="130" class="sv-desc">同一窗口 · CC / API 切换</text>
+<rect x="411" y="60" width="236" height="90" class="fnode fnode-entry"/><text x="431" y="82" class="sv-id">NETWORK / OPTIONAL</text><text x="431" y="110" class="sv-name">HTTPS / Reverse Proxy</text><text x="431" y="130" class="sv-desc">访问入口由部署环境负责</text>
+<rect x="746" y="60" width="245" height="90" class="fnode fnode-router"/><text x="767" y="82" class="sv-id sv-id-inverse">SERVER / MODE ROUTING</text><text x="767" y="110" class="sv-name sv-inverse">chat-server</text><text x="767" y="130" class="sv-desc sv-inverse">会话 · 请求分流 · 回复</text>
+<path d="M312 105 H410" class="flow-wire" marker-end="url(#flowArrow)"/><path d="M647 105 H745" class="flow-wire" marker-end="url(#flowArrow)"/>
+<!-- branch wires -->
+<path d="M869 150 V205 H276 V244" class="flow-wire api-wire" marker-end="url(#apiArrow)"/><path d="M869 150 V205 H777 V244" class="flow-wire cc-wire" marker-end="url(#ccArrow)"/>
+<rect x="80" y="223" width="400" height="268" rx="3" class="flow-lane-bg"/><rect x="570" y="223" width="400" height="268" rx="3" class="flow-lane-bg"/><text x="103" y="251" class="sv-id sv-api-label">A / DIRECT API</text><text x="594" y="251" class="sv-id sv-cc-label">B / CLAUDE CODE</text>
+<!-- branches and steps -->
+<rect x="102" y="267" width="354" height="70" class="fnode fnode-api"/><text x="120" y="289" class="sv-id">PROVIDER CONFIG</text><text x="120" y="315" class="sv-name">Endpoint / Model / Key</text>
+<path d="M279 337 V364" class="flow-wire api-wire" marker-end="url(#apiArrow)"/>
+<rect x="102" y="371" width="354" height="70" class="fnode fnode-api"/><text x="120" y="393" class="sv-id">UPSTREAM INFERENCE</text><text x="120" y="419" class="sv-name">Model API → Stream reply</text>
+<rect x="592" y="267" width="354" height="70" class="fnode fnode-cc"/><text x="610" y="289" class="sv-id">BRIDGE / TMUX</text><text x="610" y="315" class="sv-name">CC Hub → Claude Code</text>
+<path d="M770 337 V364" class="flow-wire cc-wire" marker-end="url(#ccArrow)"/>
+<rect x="592" y="371" width="354" height="70" class="fnode fnode-cc"/><text x="610" y="393" class="sv-id">RETURN CHANNEL / JSONL VERIFY</text><text x="610" y="419" class="sv-name">Web Channel MCP → Hub</text>
+<!-- reconverge -->
+<path d="M279 441 V464 H525 V518" class="flow-wire api-wire" marker-end="url(#apiArrow)"/><path d="M770 441 V464 H525" class="flow-wire cc-wire"/>
+<rect x="363" y="523" width="324" height="64" class="fnode fnode-conv"/><text x="380" y="545" class="sv-id">BACK TO CHAT</text><text x="380" y="567" class="sv-name">Conversation / Reply</text>
+<!-- optional sync overlays -->
+<rect x="48" y="536" width="238" height="69" rx="2" class="fnode fnode-sync"/><text x="65" y="557" class="sv-id">OPTIONAL / CC SYNC</text><text x="65" y="578" class="sv-name sv-small">API history → Sync inbox</text><text x="65" y="592" class="sv-desc">下一条 CC 消息时补前情</text>
+<path d="M279 441 V508 H167 V535" class="flow-wire sync-wire" marker-end="url(#syncArrow)"/><path d="M167 536 V465 H591 V303" class="flow-wire sync-wire" marker-end="url(#syncArrow)"/>
+<rect x="770" y="535" width="229" height="71" class="fnode fnode-data"/><text x="787" y="556" class="sv-id">PERSISTENCE / STORAGE</text><text x="787" y="577" class="sv-name sv-small">chat-server/data</text><text x="787" y="592" class="sv-desc">消息 · rolling_summary</text>
+<path d="M687 553 H769" class="flow-wire data-wire" marker-end="url(#flowArrow)"/>
+<text x="35" y="643" class="sv-foot">CC JSONL 是单独的 CC 会话记录；API 压缩在回复保存后更新 rolling_summary。</text><text x="35" y="660" class="sv-foot">CC Sync 是可选能力；点击切换模式本身不会唤醒 Claude Code。</text>
+</svg></div><div class="flow-legend"><span><i class="flow-dot fd-api"></i>Direct API</span><span><i class="flow-dot fd-cc"></i>Claude Code</span><span><i class="flow-dot fd-sync"></i>Optional CC Sync</span><span><i class="flow-dot fd-data"></i>Conversation data</span></div><p class="flow-source">SOURCE / 完整模块与安装细节请参阅下文章节，或打开 <a href="https://github.com/yerph/homunculus" target="_blank" rel="noopener noreferrer">github.com/yerph/homunculus</a>。</p></figure>
+<p class="aside">网页版、手机组件、Telegram、Bark、Keepalive 等是不同的入口或可选功能，实际运行还需要各自的配置。</p>
+</div></section><section class="chapter" id="modules"><div class="ch-head"><small>CHAPTER 02 — MODULE INDEX</small><h2>模块与目录</h2></div><div class="chapter-body">
+<table><thead><tr><th>模块</th><th>用途</th></tr></thead><tbody><tr><td><code>chat-server/</code></td><td>网页聊天、会话、Provider 配置与 API 请求</td></tr><tr><td><code>cc-bridge/</code></td><td>CC Hub、JSONL Tail、API Sync Inbox、Web Channel MCP Bridge</td></tr><tr><td><code>phone-widget/</code></td><td>移动端的轻量聊天入口（按需部署）</td></tr><tr><td><code>nginx/</code></td><td>反向代理示例与 HTTPS 入口</td></tr><tr><td><code>docs/</code></td><td>补充的 API、同步、安装说明文档</td></tr></tbody></table>
+</div></section>
+
+<section class="chapter" id="sync"><div class="ch-head"><small>CHAPTER 03 — CONTEXT CONTINUITY</small><h2>CC  /  API 上下文衔接</h2></div><div class="chapter-body">
+<p>网页设置中的 <code>CC  /  API context sync</code> 是独立开关，需要自行启用。启用后，API 回合在当前窗口保存并尝试进入 CC Hub 的同步收件箱；<strong>API 聊天本身不会额外唤醒 CC</strong>。</p>
+<div class="diagram"><div class="diagram-row"><b>API 聊天</b><em> -- </em><b>会话日志 / Hub Inbox</b></div><div class="diagram-row"><b>切换 CC 并发送下一条消息</b><em> -- </em><b>补入尚未同步的前情</b></div><div class="diagram-row"><b>Claude Code</b><em> -- </em><b>MCP 回复 + JSONL 确认</b></div></div>
+<p>同步依赖当前会话范围和消息去重机制。只点击切换按钮不会自动触发新的 CC 请求。公开版需要自行配置正在运行的 CC/tmux 会话以及 Bridge 鉴权。</p><p>完整的配置说明参见 <a href="https://github.com/yerph/homunculus/blob/main/docs/cc-api-continuity.md" rel="noopener noreferrer" target="_blank">CC/API 同步文档  / VIEW</a>。</p>
+</div></section><section class="chapter" id="compress"><div class="ch-head"><small>CHAPTER 04 — ROLLING SUMMARY</small><h2>API 上下文压缩</h2></div><div class="chapter-body">
+<p>这是将较早聊天内容概括为文字摘要、供后续 API 请求继续携带的机制，不是文件压缩，也不是 Claude Code 自带的 compaction。</p>
+<div class="compression-map"><div class="atlas-band-title">API COMPRESSION / PROCESS &amp; FAILURE BRANCH</div><div class="compression-step"><small>01 / TRIGGER</small><b>API 回复完成并保存</b><p>检查当前窗口的 _compressed 标记；未压缩消息达到 24 条触发。</p></div><div class="compression-down"> / NEXT</div><div class="compression-step"><small>02 / PRESERVE</small><b>保留最近 4 条消息原文</b><p>旧消息单条最多 400 字符、合并文本最多 8,000 字符，既有摘要一起作为输入。</p></div><div class="compression-down"> / NEXT</div><div class="compression-step"><small>03 / REQUEST</small><b>POST /api/compress</b><p>优先 compression: true Provider；最大输出 600 tokens，超时 60 秒。</p></div><div class="compression-down"> / NEXT</div><div class="compression-branches"><div class="compression-step successful"><small>SUCCESS</small><b>追加 rolling_summary</b><p>标记已压缩的旧消息，下一轮 API 带摘要与近期未压缩消息。</p></div><div class="compression-step failure"><small>FAILED / EMPTY</small><b>保留原有状态</b><p>不打 _compressed 标记，下一次 API 回复后可以再尝试。</p></div></div></div><div class="stats"><div><strong>24</strong><span>条未压缩消息<br>触发检查</br></span></div><div><strong>4</strong><span>最近保留原文<br>的消息条数</br></span></div><div><strong>60s</strong><span>压缩请求<br>超时限制</br></span></div></div>
+<h3>压缩发生的过程</h3><ol><li>API 回合成功完成并保存后，客户端检查当前会话的 <code>_compressed</code> 标记。</li><li>当未压缩消息达到 24 条时，保留最近 4 条原文，其余较早消息与既有摘要作为压缩输入。</li><li>优先使用 <code>compression: true</code> 的模型，否则在已配置的 Provider 中寻找 DeepSeek、OpenAI 兼容模型等。</li><li>压缩模型生成摘要，成功后追加到 <code>rolling_summary</code>，并标记对应旧消息为已压缩。</li><li>下一轮 API 请求携带摘要和仍未压缩的近期消息。原始聊天消息不会因压缩而直接从界面删除。</li></ol>
+<h3>关键约束</h3><p>单条历史消息最多截取 <strong>400 字符</strong>，合并输入最多 <strong>8,000 字符</strong>；模型提示摘要目标约 400 英文单词，生成上限 600 tokens。请求失败或返回空摘要时，不标记旧消息已压缩，之后可以重试。</p>
+<p class="aside">摘要目前是追加式积累，不保证 token 预算始终可控。它与 CC Sync 是两套不同机制，也不会主动改写 Claude Code 的 JSONL 或长期记忆。</p>
+</div></section><section class="chapter" id="requirements"><div class="ch-head"><small>CHAPTER 05 — PREREQUISITES</small><h2>安装前提</h2></div><div class="chapter-body">
+<table><thead><tr><th>项目</th><th>说明</th></tr></thead><tbody><tr><td>Node.js 20+</td><td>用于运行网页服务；API 独立模式不必安装 Claude Code。</td></tr><tr><td>Provider / API Key</td><td>使用 API 模式时自行配置 Endpoint、Model 与 Key。</td></tr><tr><td>Claude Code + tmux</td><td>只有 CC 模式需要，准备好可运行且已登录的 CC 会话。</td></tr><tr><td>VPS 或本机电脑</td><td>任选其一作为运行环境；远程访问时建议配置 HTTPS 和访问控制。</td></tr><tr><td>Nginx、Telegram、Bark</td><td>按需要选装。</td></tr></tbody></table>
+</div></section><section class="chapter" id="install"><div class="ch-head"><small>CHAPTER 06 — INSTALLATION / 11 STEPS</small><h2>一步一步安装</h2></div><div class="chapter-body">
+<p>以下是依据项目 README 整理的安装流程预览。命令和路径可能需要根据你的操作系统与部署结构调整；正式部署时建议同时核对仓库的 <a href="https://github.com/yerph/homunculus/blob/main/README.md" rel="noopener noreferrer" target="_blank">README 原文</a>及 <code>.env.example</code>。</p>
+<h3>01 / 准备环境</h3><p>在 Linux 服务器上准备 Node.js 20+、tmux；需要外网访问时还要准备 Nginx 和 HTTPS 证书。Claude Code 仅在 CC 模式使用。</p>
+<pre><code>node --version
+tmux -V</code></pre>
+<h3>02 / 克隆项目</h3><pre><code>git clone https://github.com/yerph/homunculus.git
+cd homunculus</code></pre>
+<h3>03 / 安装依赖</h3><pre><code>npm --prefix chat-server ci
+npm --prefix cc-bridge ci
+# 可选手机组件
+npm --prefix phone-widget ci</code></pre>
+<h3>04 / 配置环境变量</h3><pre><code>cp .env.example .env</code></pre><p>用自己的随机密钥和路径替换示例值；不要把 <code>.env</code> 上传到公开仓库。</p>
+<pre><code>CHAT_PORT=4500
+CHAT_PASSWORD=replace-with-a-long-random-password
+BRIDGE_AUTH_TOKEN=replace-with-a-different-random-token
+BRIDGE_CLIENT_PORT=3462
+BRIDGE_INTERNAL_PORT=3463
+BRIDGE_TMUX=cc
+BRIDGE_TMUX_USER=your-linux-username
+BRIDGE_CC_SESSION_DIR=/absolute/path/to/your/claude/project/transcripts</code></pre>
+<h3>05 / 设置 CC Profile</h3><p>根据需要配置自己的 <code>CLAUDE.md</code>。身份设定与回复风格由使用者自行维护，不要将私人对话或身份资料包含在公开仓库。</p>
+<h3>06 / 配置 Nginx（远程访问时）</h3><p>参考项目的 Nginx 配置，设置域名、上游服务与证书路径。证书就绪后再启用 HTTPS 配置，并通过 <code>nginx -t</code> 验证语法。</p>
+<h3>07 / 配置 Telegram（可选）</h3><p>需要 Telegram 渠道时，再创建 Bot、安装插件并完成配对。不使用 Telegram 则可跳过。</p>
+<h3>08 / 启动 CC 与网页服务</h3><p>先在 tmux 启动自己的 Claude Code 会话，随后分别启动 CC Hub 和 chat-server。</p>
+<pre><code>tmux new-session -d -s cc 'claude'
+tmux ls
+
+# 在不同终端中运行
+node --env-file=.env cc-bridge/hub.js
+node --env-file=.env chat-server/server.js</code></pre>
+<p class="aside">还需在 Claude Code MCP 配置中注册 <code>cc-bridge/bridge.js</code>；仅启动 Hub 并不足以让 CC 回复网页。CC Hub 端口应只允许本机访问。</p>
+<h3>09 / 配置 Keepalive（可选）</h3><p>如需定时让 CC 主动发送消息，可根据服务器时区配置 cron 等调度方式。</p>
+<h3>10 / 配置 Bark（可选）</h3><p>按需要填写自己的 Bark 凭据，用于 iOS 通知；不使用则跳过。</p>
+<h3>11 / 安装 PWA（可选）</h3><p>网页服务可配置为手机或电脑桌面应用。需要通过 HTTPS 访问，并依具体浏览器的安装方式操作。</p>
+</div></section><section class="chapter" id="custom"><div class="ch-head"><small>CHAPTER 07 — PERSONALIZATION</small><h2>自定义与个性化</h2></div><div class="chapter-body">
+<p>主题色、聊天窗口、API Provider、CC Profile、图标与 PWA 表现均可进一步个性化。建议先验证基础 API 对话，再连接 CC 模式与上下文同步，最后添加 Telegram、Bark 与 Keepalive 等外围功能。</p>
+</div></section><section class="chapter" id="security"><div class="ch-head"><small>CHAPTER 08 — DATA &amp; MAINTENANCE</small><h2>运行数据与维护</h2></div><div class="chapter-body">
+<p>部署到公网时，需要使用 HTTPS、强随机密钥、必要的访问限制，并避免公开开放 CC Hub 的内部端口。公开示例的应用层请求鉴权主要使用 <code>CHAT_PASSWORD</code> 与 <code>x-auth-token</code>；若使用 Cookie 登录，需要自己在前置网关集成相应机制。</p>
+<p>聊天记录主要存储在 <code>chat-server/data/conversations/</code> 等数据目录；密钥、私人 JSONL、API 聊天日志与缓存状态都不应提交到公开仓库。备份时同样需要保护私人数据。</p>
+</div></section><section class="chapter" id="faq"><div class="ch-head"><small>CHAPTER 09 — TROUBLESHOOTING</small><h2>常见问题与排查</h2></div><div class="chapter-body">
+<details open=""><summary>网页打不开或显示 502 Bad Gateway</summary><p>首先检查 chat-server 是否在运行，然后确认 Nginx 的代理端口与 <code>.env</code> 一致；CC 模式还需要查看 Hub 和 MCP Bridge 的连接状态。</p><pre><code>sudo tail -f /var/log/nginx/error.log</code></pre></details>
+<details><summary>Telegram 发消息但 CC 没有回复</summary><p>检查 Claude Code 的 tmux 会话是否还在、插件是否安装并配对成功。</p><pre><code>tmux ls
+tmux attach -t cc</code></pre></details>
+<details><summary>API 模式是否会消耗额外费用？</summary><p>API 模式走的是服务商按调用量计费的接口，与 Claude Code 订阅额度分开计算。历史压缩同样可能使用付费 API。</p></details>
+<details><summary>切回 CC 后为什么没有自动出现 API 聊天内容？</summary><p>CC Sync 必须启用，而且不是仅切换按钮就注入；需在 CC 模式中正常发送下一条消息，才会按会话规则尝试补入待同步前情。</p></details>
+<details><summary>HTTPS 证书异常怎么办？</summary><p>检查域名 DNS、证书路径和续期状态；先准备证书，再将相应的 HTTPS 配置生效。</p></details>
+</div></section><section class="chapter" id="license"><div class="ch-head"><small>CHAPTER 10 — LICENSE</small><h2>许可证</h2></div><div class="chapter-body">
+<p>项目使用 <strong>PolyForm Noncommercial License 1.0.0</strong>（非商业用途源码可用协议）。商业使用应先确认许可范围；第三方依赖保留各自许可证，历史旧版授权不因后续更换许可证而自动失效。</p><p><a href="https://polyformproject.org/licenses/noncommercial/1.0.0/" rel="noopener noreferrer" target="_blank">阅读协议全文  / VIEW</a></p>
+</div></section><div class="merged-footer">HOMUNCULUS / DOCUMENTATION — <a href="https://github.com/yerph/homunculus/blob/main/README.md" rel="noopener noreferrer" target="_blank">GitHub README  / VIEW</a></div></div></div></div></section><footer class="wrap footer"><span>homunculus / EDITORIAL CONCEPT PREVIEW</span><span>SVG + CSS + HTML · NO GENERATED IMAGES</span></footer>
+<script>
+(() => {
+  const stream = document.getElementById('conversation-stream');
+  const shell = document.getElementById('conversation-shell');
+  if (!stream || !shell) return;
+
+  const original = [...stream.querySelectorAll('.chat-line')].map(row => row.cloneNode(true));
+  const footer = stream.querySelector('.stream-bottom-spacer');
+  const badge = document.getElementById('live-mode');
+  const count = document.getElementById('stream-counter');
+  const tabs = {
+    cc: document.getElementById('demo-cc-tab'),
+    api: document.getElementById('demo-api-tab')
+  };
+  const heroTabs = {
+    cc: document.getElementById('cc'),
+    api: document.getElementById('api')
+  };
+  const composer = shell.querySelector('.chat-composer');
+  let index = 0, timer = null, generation = 0;
+  const interval = 2050;
+  const endHold = 4400;
+  const delayFirst = 800;
+
+  // Static fallback rows are present only for previewers that block JS.
+  // If JS can run, the transcript really begins empty and inserts new nodes.
+  stream.querySelectorAll('.chat-line').forEach(row => row.remove());
+  document.documentElement.classList.add('insertion-ready', 'demo-js-running');
+  shell.setAttribute('tabindex', '0');
+  shell.setAttribute('aria-label', '交互聊天展示：点击窗口出现下一条消息；自动播放会继续');
+  stream.setAttribute('aria-live', 'polite');
+  stream.setAttribute('aria-atomic', 'false');
+
+  function mode(value) {
+    const selected = value === 'api' ? 'api' : 'cc';
+    if (badge) badge.textContent = selected === 'api' ? 'DIRECT API' : 'CLAUDE CODE';
+    for (const value of ['cc', 'api']) {
+      tabs[value]?.classList.toggle('current', value === selected);
+      heroTabs[value]?.classList.toggle('active', value === selected);
+      heroTabs[value]?.setAttribute('aria-pressed', String(value === selected));
+    }
+  }
+
+  function schedule(milliseconds) {
+    clearTimeout(timer);
+    const requestedGeneration = generation;
+    timer = setTimeout(() => {
+      if (requestedGeneration === generation) advance();
+    }, milliseconds);
+  }
+
+  function restart() {
+    generation++;
+    clearTimeout(timer);
+    stream.querySelectorAll('.chat-line').forEach(row => row.remove());
+    index = 0;
+    stream.scrollTop = 0;
+    mode('cc');
+    if (count) count.textContent = `00 / ${String(original.length).padStart(2, '0')}`;
+    schedule(delayFirst);
+  }
+
+  function advance() {
+    generation++;
+    clearTimeout(timer);
+    if (index >= original.length) {
+      restart();
+      return;
+    }
+    const row = original[index].cloneNode(true);
+    row.removeAttribute('id');
+    row.classList.add('inserted', 'visible-now');
+    stream.insertBefore(row, footer);
+    mode(row.dataset.mode);
+    index++;
+    if (count) count.textContent = `${String(index).padStart(2, '0')} / ${String(original.length).padStart(2, '0')}`;
+    requestAnimationFrame(() => {
+      stream.scrollTop = Math.max(0, stream.scrollHeight - stream.clientHeight);
+    });
+    schedule(index === original.length ? endHold : interval);
+  }
+
+  // The *window itself* advances the dialogue; no auxiliary controls needed.
+  // Prevent document links and nav buttons from accidentally stepping messages.
+  shell.addEventListener('click', event => {
+    if (event.target.closest('a,button,input,select,textarea')) return;
+    advance();
+  });
+  shell.addEventListener('keydown', event => {
+    if (event.target !== shell) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      advance();
+    }
+  });
+  if (composer) composer.setAttribute('title', '点击窗口可让下一条消息出现');
+  for (const button of Object.values(heroTabs)) {
+    button?.addEventListener('click', () => document.getElementById('demo')?.scrollIntoView({behavior:'smooth'}));
+  }
+  restart();
+})();
+</script><script>
+(function(){const btn=document.getElementById('copy-ai-prompt');if(!btn)return;btn.addEventListener('click',async function(){const val=document.getElementById('ai-install-text').textContent.trim();const status=document.getElementById('copy-ai-status');try{await navigator.clipboard.writeText(val);status.textContent='COPIED / 已复制到剪贴板';btn.textContent='COPIED';setTimeout(()=>btn.textContent='COPY FOR YOUR AI',2000);}catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById('ai-install-text'));const selection=window.getSelection();selection.removeAllRanges();selection.addRange(r);status.textContent='文字已选中；请使用浏览器的复制功能';}})})();
+</script></body></html>
