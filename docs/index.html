@@ -448,6 +448,36 @@ html.demo-js-running #conversation-stream > .chat-line.inserted {animation:dialo
   .hero .source-address {max-width: 100%;}
 }
 </style>
+
+<style id="homunculus-serif-spacing-2026">
+/* Display serif spacing: gently open up all Instrument Serif headlines and wordmarks. */
+.wordmark,
+.hero h1,
+.index,
+.bar,
+.phoneheader,
+.ticker i,
+.section h2 em,
+.card h3,
+.field-guide-entry h2,
+.merged-manual-top h2,
+.merged-content .feature h3,
+.merged-content .stats strong,
+.dialog-intro h2 i,
+.conversation-title,
+.rail-number,
+.folio-heading,
+.folio-cross,
+.folio-art-letter,
+.blueprint-separator {letter-spacing:.025em;}
+/* The largest words need less tracking to remain comfortable on a phone. */
+.hero h1,.folio-heading,.field-guide-entry h2,.merged-manual-top h2 {letter-spacing:.016em;}
+.folio-heading{line-height:.87;}
+@media(max-width:520px){
+ .hero h1{letter-spacing:.012em;}
+ .folio-heading{letter-spacing:.013em;line-height:.89;}
+}
+</style>
 </head>
 <body>
 <header class="wrap"><div class="nav"><a class="wordmark" href="#top">homunculus</a><nav class="navlinks"><a href="#demo">演示</a><a href="#guide">教程</a><a href="https://github.com/yerph/homunculus" target="_blank" rel="noopener noreferrer">GITHUB</a></nav><span class="issue">— VOL. 01 / 2026</span></div></header>
